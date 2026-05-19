@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hotelhub-postgres
+    environment:
+      POSTGRES_DB: hotelhub
+      POSTGRES_USER: hotelhub
+      POSTGRES_PASSWORD: hotelhub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotelhub -d hotelhub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hotelhub-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8080
+      DB_URL: jdbc:postgresql://postgres:5432/hotelhub
+      DB_USERNAME: hotelhub
+      DB_PASSWORD: hotelhub
+      JWT_SECRET: aGzLr9s2XvYpQmKjNbWdFxCzA4BmN7RsT5UqPwJkL3M=
+      SECURE_COOKIES: "false"
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      BOOTSTRAP_ADMIN_EMAIL: admin@hotelhub.local
+      BOOTSTRAP_ADMIN_PASSWORD: ChangeMe123!
+      BOOTSTRAP_ADMIN_FULL_NAME: Hotel Admin
+      BOOTSTRAP_SAMPLE_DATA: "true"
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hotelhub-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:

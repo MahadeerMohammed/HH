@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String         @unique @db.VarChar(255)
+  fullName      String         @map("full_name") @db.VarChar(120)
+  passwordHash  String         @map("password_hash") @db.VarChar(255)
+  role          String         @db.VarChar(30)
+  active        Boolean        @default(true)
+  lastLoginAt   DateTime?      @map("last_login_at") @db.Timestamptz(6)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  refreshTokens RefreshToken[]
+
+  @@map("admin_users")
+}
+
+model Room {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomNumber    String         @unique @map("room_number") @db.VarChar(50)
+  roomType      String         @map("room_type") @db.VarChar(80)
+  floorNumber   Int            @map("floor_number")
+  maxOccupancy  Int            @map("max_occupancy")
+  status        String         @db.VarChar(30)
+  baseRate      Decimal        @map("base_rate") @db.Decimal(12, 2)
+  notes         String?        @db.VarChar(1200)
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+  revenueEntries RevenueEntry[]
+  expenses      Expense[]
+
+  @@map("rooms")
+}
+
+model RevenueEntry {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomId         String   @map("room_id") @db.Uuid
+  stayDate       DateTime @map("stay_date") @db.Date
+  guestName      String   @map("guest_name") @db.VarChar(120)
+  bookingChannel String   @map("booking_channel") @db.VarChar(80)
+  nights         Int
+  grossRevenue   Decimal  @map("gross_revenue") @db.Decimal(12, 2)
+  platformFee    Decimal  @map("platform_fee") @db.Decimal(12, 2)
+  taxAmount      Decimal  @map("tax_amount") @db.Decimal(12, 2)
+  variableCost   Decimal  @map("variable_cost") @db.Decimal(12, 2)
+  notes          String?  @db.VarChar(1200)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  room           Room     @relation(fields: [roomId], references: [id])
+
+  @@index([stayDate], map: "idx_revenue_entries_stay_date")
+  @@index([roomId], map: "idx_revenue_entries_room_id")
+  @@map("revenue_entries")
+}
+
+model Expense {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomId      String?  @map("room_id") @db.Uuid
+  expenseDate DateTime @map("expense_date") @db.Date
+  category    String   @db.VarChar(30)
+  vendorName  String   @map("vendor_name") @db.VarChar(120)
+  amount      Decimal  @db.Decimal(12, 2)
+  notes       String?  @db.VarChar(1200)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  room        Room?    @relation(fields: [roomId], references: [id])
+
+  @@index([expenseDate], map: "idx_expenses_expense_date")
+  @@index([roomId], map: "idx_expenses_room_id")
+  @@map("expenses")
+}
+
+model RefreshToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminUserId String    @map("admin_user_id") @db.Uuid
+  tokenHash   String    @unique @map("token_hash") @db.VarChar(128)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
+  ipAddress   String?   @map("ip_address") @db.VarChar(255)
+  userAgent   String?   @map("user_agent") @db.VarChar(512)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId], map: "idx_refresh_tokens_admin_user_id")
+  @@index([expiresAt], map: "idx_refresh_tokens_expires_at")
+  @@map("refresh_tokens")
+}

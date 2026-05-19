@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.DS_Store
+.idea/
+.vscode/
+*.log
+*.tmp
+
+backend/target/
+frontend/android/
+frontend/ios/
+frontend/.capacitor/
+
+.env
+.env.*
+!**/.env.example

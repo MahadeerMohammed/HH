@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hotelhub}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
+  flyway:
+    enabled: true
+
+app:
+  auth:
+    secure-cookies: false
