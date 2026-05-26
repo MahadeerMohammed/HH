@@ -33,7 +33,7 @@ DB_URL=jdbc:postgresql://postgres:5432/hotelhub
 DB_USERNAME=hotelhub
 DB_PASSWORD=change-this-database-password
 
-JWT_SECRET=replace-with-a-strong-32-byte-base64-secret
+JWT_SECRET=generate-a-32-byte-base64-secret-before-deploying
 ACCESS_TOKEN_MINUTES=15
 REFRESH_TOKEN_DAYS=14
 JWT_ISSUER=hotelhub-admin
@@ -124,4 +124,3 @@ After creating a signed release APK:
 3. Keep the APK version updated when you change the mobile app.
 
 Direct APK download is fine for private/internal use. For public users, Google Play Store is better because updates, trust, and install flow are cleaner.
-

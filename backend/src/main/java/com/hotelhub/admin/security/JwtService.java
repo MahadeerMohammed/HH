@@ -5,6 +5,7 @@ import com.hotelhub.admin.domain.AdminUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +30,7 @@ public class JwtService {
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(authProperties.getJwtSecret());
-        } catch (IllegalArgumentException ex) {
+        } catch (DecodingException | IllegalArgumentException ex) {
             keyBytes = authProperties.getJwtSecret().getBytes(StandardCharsets.UTF_8);
         }
 
