@@ -6,6 +6,9 @@ build/
 .vscode/
 *.log
 *.tmp
+*.jks
+*.jks.txt
+*.keystore
 
 backend/target/
 frontend/android/
