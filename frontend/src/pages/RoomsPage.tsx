@@ -52,8 +52,7 @@ export const RoomsPage = () => {
 
   return (
     <WorkspacePage
-        title="Room Management"
-        description="Maintain room inventory, operational status, occupancy capacity, and base pricing."
+        title="Rooms"
         actions={
           <IonButton onClick={() => navigate("/rooms/new")}>
             <IonIcon icon={addOutline} slot="start" />

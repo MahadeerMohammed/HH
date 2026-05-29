@@ -1144,3 +1144,207 @@ button,
     padding: 0.4rem 0.6rem 7rem;
   }
 }
+
+/* Compact production mobile refinements */
+.logout-button {
+  --border-radius: 999px;
+  --padding-start: 0.7rem;
+  --padding-end: 0.75rem;
+  min-height: 34px;
+  font-size: 0.82rem;
+}
+
+.topbar__identity span {
+  font-weight: 700;
+}
+
+.metric-card {
+  min-width: 0;
+}
+
+.metric-card strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .topbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.55rem 0.85rem 0.2rem;
+  }
+
+  .topbar__actions {
+    width: auto;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+  }
+
+  .topbar__identity {
+    width: auto;
+    order: 0;
+    text-align: right;
+    min-width: 0;
+  }
+
+  .topbar__identity span {
+    display: block;
+    max-width: 44vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar__identity small {
+    display: none;
+  }
+
+  .workspace-page {
+    gap: 0.55rem;
+  }
+
+  .workspace-page__header {
+    gap: 0.35rem;
+  }
+
+  .workspace-page__content {
+    gap: 0.75rem;
+    scroll-padding-top: 5rem;
+  }
+
+  .page-body {
+    padding: 0.35rem 0.85rem 5.25rem;
+  }
+
+  .page-stack,
+  .content-grid,
+  .workspace-page__notices,
+  .workspace-page__content {
+    gap: 0.75rem;
+  }
+
+  .page-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .page-header h1 {
+    font-size: clamp(1.35rem, 5vw, 1.8rem);
+    line-height: 1.1;
+    margin-bottom: 0;
+  }
+
+  .page-header__actions {
+    width: auto;
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+
+  .page-header__actions ion-button {
+    min-height: 38px;
+    font-size: 0.82rem;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .metric-card {
+    padding: 0.7rem;
+    border-radius: 14px;
+  }
+
+  .metric-card__header {
+    margin-bottom: 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .metric-card strong {
+    font-size: clamp(1rem, 5vw, 1.25rem);
+    line-height: 1.15;
+  }
+
+  .section-card {
+    gap: 0.65rem;
+    padding: 0.75rem;
+    border-radius: 14px;
+  }
+
+  .section-card__header {
+    gap: 0.45rem;
+  }
+
+  .section-card__header p {
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .chart-shell {
+    height: 210px;
+  }
+
+  .insight-list {
+    gap: 0.5rem;
+  }
+
+  .insight-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 0.6rem 0.7rem;
+    border-radius: 12px;
+  }
+
+  .table-shell {
+    border-radius: 12px;
+    padding: 0 0.5rem;
+  }
+
+  .mobile-tabbar {
+    padding: 0.4rem 0.45rem;
+    gap: 0.2rem;
+  }
+
+  .mobile-tabbar__item {
+    min-height: 46px;
+    padding: 0.35rem 0.15rem;
+    border-radius: 10px;
+    font-size: 0.62rem;
+  }
+
+  .mobile-tabbar__item ion-icon {
+    font-size: 1.2rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .app-shell--keyboard-active .mobile-tabbar {
+    display: none;
+  }
+
+  .app-shell--keyboard-active .page-body {
+    padding-bottom: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logout-button span {
+    display: none;
+  }
+
+  .logout-button ion-icon {
+    margin: 0;
+  }
+
+  .page-body {
+    padding: 0.25rem 0.55rem 4.9rem;
+  }
+
+  .page-header__actions ion-button {
+    --padding-start: 0.55rem;
+    --padding-end: 0.55rem;
+    font-size: 0.76rem;
+  }
+}

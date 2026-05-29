@@ -34,8 +34,7 @@ export const DashboardPage = () => {
 
   return (
     <WorkspacePage
-        title="Operations Dashboard"
-        description="Monitor profit, occupancy, and monthly movement across rooms and operating costs."
+        title="Dashboard"
         notices={error ? <div className="alert alert--danger">{error}</div> : null}
     >
 

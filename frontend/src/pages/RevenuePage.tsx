@@ -45,7 +45,6 @@ export const RevenuePage = () => {
   return (
     <WorkspacePage
       title="Revenue"
-      description="Revenue is calculated automatically from room bookings, including net revenue after fees, tax, and variable costs."
       actions={
         <IonButton onClick={() => navigate("/bookings/new")}>
           New Room Booking

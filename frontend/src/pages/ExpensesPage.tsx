@@ -36,8 +36,7 @@ export const ExpensesPage = () => {
 
   return (
     <WorkspacePage
-        title="Expense Control"
-        description="Track housekeeping, maintenance, utilities, software, and property-level operating costs."
+        title="Expenses"
         actions={
           <IonButton onClick={() => navigate("/expenses/new")}>
             <IonIcon icon={addOutline} slot="start" />

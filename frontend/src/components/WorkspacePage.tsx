@@ -3,7 +3,7 @@ import { PageHeader } from "./PageHeader";
 
 interface WorkspacePageProps {
   title: string;
-  description: string;
+  description?: string;
   actions?: ReactNode;
   notices?: ReactNode;
   children: ReactNode;

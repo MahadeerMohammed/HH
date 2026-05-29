@@ -63,8 +63,7 @@ export const ReportsPage = () => {
 
   return (
     <WorkspacePage
-        title="Reports And Profitability"
-        description="Generate a clean profitability window, inspect room performance, and export finance-ready CSV reports."
+        title="Reports"
         actions={
           <form className="date-filter" onSubmit={handleFilterSubmit}>
             <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />

@@ -1,4 +1,6 @@
 import { IonButton, IonIcon } from "@ionic/react";
+import type { FocusEvent } from "react";
+import { useState } from "react";
 import {
   addCircleOutline,
   analyticsOutline,
@@ -27,9 +29,31 @@ const pageItems = [
 export const AppShell = () => {
   const { user, signOut } = useAuth();
   const location = useLocation();
+  const [keyboardActive, setKeyboardActive] = useState(false);
+
+  const handleFocusCapture = (event: FocusEvent<HTMLDivElement>) => {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) {
+      setKeyboardActive(true);
+    }
+  };
+
+  const handleBlurCapture = () => {
+    window.setTimeout(() => {
+      const activeElement = document.activeElement;
+      setKeyboardActive(
+        activeElement instanceof HTMLInputElement ||
+          activeElement instanceof HTMLSelectElement ||
+          activeElement instanceof HTMLTextAreaElement
+      );
+    }, 80);
+  };
 
   return (
-    <div className="app-shell">
+    <div
+      className={keyboardActive ? "app-shell app-shell--keyboard-active" : "app-shell"}
+      onFocusCapture={handleFocusCapture}
+      onBlurCapture={handleBlurCapture}
+    >
       <aside className="app-sidebar">
         <div className="brand-lockup">
           <div className="brand-lockup__mark">H</div>
@@ -70,6 +94,7 @@ export const AppShell = () => {
             <IonButton 
               fill="outline" 
               color="dark" 
+              size="small"
               onClick={() => void signOut()}
               aria-label="Sign out from admin dashboard"
               className="logout-button"
