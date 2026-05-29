@@ -39,14 +39,16 @@ export const AppShell = () => {
           </div>
         </div>
 
-        <nav className="app-nav">
+        <nav className="app-nav" role="navigation" aria-label="Main navigation">
           {navigationItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) => (isActive ? "app-nav__item app-nav__item--active" : "app-nav__item")}
+              role="menuitem"
+              aria-current={location.pathname === item.to ? "page" : undefined}
             >
-              <IonIcon icon={item.icon} />
+              <IonIcon icon={item.icon} aria-hidden="true" />
               <span>{item.label}</span>
             </NavLink>
           ))}
@@ -59,32 +61,41 @@ export const AppShell = () => {
       </aside>
 
       <div className="app-main">
-        <header className="topbar">
+        <header className="topbar" role="banner">
+          <div className="topbar__identity">
+            <span>{user?.fullName}</span>
+            <small>{user?.role}</small>
+          </div>
           <div className="topbar__actions">
-            <div className="topbar__identity">
-              <span>{user?.fullName}</span>
-              <small>{user?.role}</small>
-            </div>
-            <IonButton fill="outline" color="dark" onClick={() => void signOut()}>
-              <IonIcon icon={logOutOutline} slot="start" />
-              Logout
+            <IonButton 
+              fill="outline" 
+              color="dark" 
+              onClick={() => void signOut()}
+              aria-label="Sign out from admin dashboard"
+              className="logout-button"
+            >
+              <IonIcon icon={logOutOutline} slot="start" aria-hidden="true" />
+              <span>Logout</span>
             </IonButton>
           </div>
         </header>
 
-        <main className="page-body">
+        <main className="page-body" role="main">
           <Outlet />
         </main>
 
-        <nav className="mobile-tabbar">
+        <nav className="mobile-tabbar" role="navigation" aria-label="Mobile navigation">
           {navigationItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) => (isActive ? "mobile-tabbar__item mobile-tabbar__item--active" : "mobile-tabbar__item")}
+              role="menuitem"
+              aria-current={location.pathname === item.to ? "page" : undefined}
+              title={item.label}
             >
-              <IonIcon icon={item.icon} />
-              <span>{item.label}</span>
+              <IonIcon icon={item.icon} aria-hidden="true" />
+              <span aria-label={item.label}>{item.label}</span>
             </NavLink>
           ))}
         </nav>

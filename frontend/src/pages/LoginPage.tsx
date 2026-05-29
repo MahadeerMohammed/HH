@@ -61,10 +61,18 @@ export const LoginPage = () => {
               <p>Use your admin credentials to open the command center.</p>
             </div>
 
-            <form className="stack-form" onSubmit={handleSubmit}>
+            <form className="stack-form" onSubmit={handleSubmit} noValidate>
               <label className="field">
                 <span>Email</span>
-                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="username" />
+                <input 
+                  value={email} 
+                  onChange={(event) => setEmail(event.target.value)} 
+                  type="email" 
+                  autoComplete="username"
+                  required
+                  aria-required="true"
+                  placeholder="admin@hotelhub.com"
+                />
               </label>
 
               <label className="field">
@@ -74,12 +82,20 @@ export const LoginPage = () => {
                   onChange={(event) => setPassword(event.target.value)}
                   type="password"
                   autoComplete="current-password"
+                  required
+                  aria-required="true"
+                  placeholder="••••••••"
                 />
               </label>
 
-              {error ? <div className="alert alert--danger">{error}</div> : null}
+              {error ? <div className="alert alert--danger" role="alert">{error}</div> : null}
 
-              <IonButton expand="block" type="submit" disabled={submitting}>
+              <IonButton 
+                expand="block" 
+                type="submit" 
+                disabled={submitting || !email || !password}
+                aria-busy={submitting}
+              >
                 {submitting ? "Signing in..." : "Open Admin Console"}
               </IonButton>
             </form>
