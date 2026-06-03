@@ -69,11 +69,11 @@ export const ExpensesPage = () => {
               <tbody>
                 {expenses.map((expense) => (
                   <tr key={expense.id}>
-                    <td>{formatDate(expense.expenseDate)}</td>
-                    <td>{expense.category.replace("_", " ")}</td>
-                    <td>{expense.vendorName}</td>
-                    <td>{expense.roomNumber ?? "Property"}</td>
-                    <td>{formatCurrency(expense.amount)}</td>
+                    <td data-label="Date">{formatDate(expense.expenseDate)}</td>
+                    <td data-label="Category">{expense.category.replace("_", " ")}</td>
+                    <td data-label="Vendor">{expense.vendorName}</td>
+                    <td data-label="Room">{expense.roomNumber ?? "Property"}</td>
+                    <td data-label="Amount">{formatCurrency(expense.amount)}</td>
                   </tr>
                 ))}
               </tbody>

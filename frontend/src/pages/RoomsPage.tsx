@@ -88,17 +88,17 @@ export const RoomsPage = () => {
               <tbody>
                 {rooms.map((room) => (
                   <tr key={room.id}>
-                    <td>
+                    <td data-label="Room">
                       <strong>{room.roomNumber}</strong>
                       <small>
                         {room.roomType} - Floor {room.floorNumber} - {room.maxOccupancy} guests
                       </small>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span className={`status-pill status-pill--${room.status.toLowerCase()}`}>{room.status}</span>
                     </td>
-                    <td>{formatCurrency(room.baseRate)}</td>
-                    <td>{formatDate(room.updatedAt)}</td>
+                    <td data-label="Base Rate">{formatCurrency(room.baseRate)}</td>
+                    <td data-label="Updated">{formatDate(room.updatedAt)}</td>
                     <td className="table-actions">
                       <button type="button" onClick={() => navigate(`/rooms/new?edit=${room.id}`)}>
                         Edit

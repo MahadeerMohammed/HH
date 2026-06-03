@@ -84,16 +84,16 @@ export const RevenuePage = () => {
               <tbody>
                 {entries.map((entry) => (
                   <tr key={entry.id}>
-                    <td>
+                    <td data-label="Stay">
                       <strong>{entry.guestName}</strong>
                       <small>{formatDate(entry.stayDate)}</small>
                     </td>
-                    <td>{entry.roomNumber}</td>
-                    <td>{entry.nights}</td>
-                    <td>{formatCurrency(entry.grossRevenue)}</td>
-                    <td>{formatCurrency(entry.platformFee + entry.taxAmount + entry.variableCost)}</td>
-                    <td>{formatCurrency(entry.netRevenue)}</td>
-                    <td>{entry.bookingChannel}</td>
+                    <td data-label="Room">{entry.roomNumber}</td>
+                    <td data-label="Nights">{entry.nights}</td>
+                    <td data-label="Gross">{formatCurrency(entry.grossRevenue)}</td>
+                    <td data-label="Costs">{formatCurrency(entry.platformFee + entry.taxAmount + entry.variableCost)}</td>
+                    <td data-label="Net">{formatCurrency(entry.netRevenue)}</td>
+                    <td data-label="Channel">{entry.bookingChannel}</td>
                   </tr>
                 ))}
               </tbody>
