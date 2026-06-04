@@ -1,3 +1,11 @@
+# ============================================
+# Netlify Configuration for HotelHub Frontend
+# ============================================
+# Branch Configuration:
+#   - Production branch: prod
+#   - Deploy previews: main
+#   - See DEPLOYMENT.md for detailed setup
+
 [build]
   command = "cd frontend && npm install && npm run build"
   publish = "frontend/dist"
