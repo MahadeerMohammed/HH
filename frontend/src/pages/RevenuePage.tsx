@@ -1,6 +1,7 @@
 import { IonButton, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from "@ionic/react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { MetricCard } from "../components/MetricCard";
 import { SectionCard } from "../components/SectionCard";
 import { WorkspacePage } from "../components/WorkspacePage";
@@ -25,6 +26,8 @@ export const RevenuePage = () => {
   const { apiRequest } = useAuth();
   const [entries, setEntries] = useState<RevenueEntry[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<ConsolidatedBooking | null>(null);
+  const [deleteBookingId, setDeleteBookingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -46,18 +49,22 @@ export const RevenuePage = () => {
     void loadData();
   }, []);
 
-  const handleDelete = async (bookingGroupId: string) => {
-    if (!window.confirm("Permanently delete this booking group? This cannot be undone.")) {
+  const handleDelete = async () => {
+    if (!deleteBookingId) {
       return;
     }
 
+    setDeleting(true);
     try {
-      await apiRequest(`/api/v1/revenue/${bookingGroupId}`, {
+      await apiRequest(`/api/v1/revenue/${deleteBookingId}`, {
         method: "DELETE"
       });
+      setDeleteBookingId(null);
       await loadData();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Unable to delete revenue.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -156,7 +163,7 @@ export const RevenuePage = () => {
                       <button
                         type="button"
                         className="table-action-button table-action-button--danger"
-                        onClick={() => void handleDelete(booking.bookingGroupId)}
+                        onClick={() => setDeleteBookingId(booking.bookingGroupId)}
                       >
                         Delete
                       </button>
@@ -237,6 +244,19 @@ export const RevenuePage = () => {
           </div>
         </IonContent>
       </IonModal>
+      <ConfirmDialog
+        isOpen={!!deleteBookingId}
+        title="Delete Booking"
+        message="Permanently delete this booking group? This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleting}
+        onCancel={() => {
+          if (!deleting) {
+            setDeleteBookingId(null);
+          }
+        }}
+        onConfirm={() => void handleDelete()}
+      />
     </WorkspacePage>
   );
 };

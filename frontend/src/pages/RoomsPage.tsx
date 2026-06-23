@@ -2,6 +2,7 @@ import { IonButton, IonIcon } from "@ionic/react";
 import { addOutline, archiveOutline, createOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { SectionCard } from "../components/SectionCard";
 import { WorkspacePage } from "../components/WorkspacePage";
 import { useAuth } from "../contexts/AuthContext";
@@ -15,6 +16,8 @@ export const RoomsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [archiveRoomId, setArchiveRoomId] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
 
   const loadRooms = async () => {
     setLoading(true);
@@ -34,19 +37,23 @@ export const RoomsPage = () => {
     void loadRooms();
   }, []);
 
-  const handleArchive = async (roomId: string) => {
-    if (!window.confirm("Archive this room from active inventory?")) {
+  const handleArchive = async () => {
+    if (!archiveRoomId) {
       return;
     }
 
+    setArchiving(true);
     try {
-      await apiRequest(`/api/v1/rooms/${roomId}`, {
+      await apiRequest(`/api/v1/rooms/${archiveRoomId}`, {
         method: "DELETE"
       });
       setSuccess("Room archived.");
+      setArchiveRoomId(null);
       await loadRooms();
     } catch (archiveError) {
       setError(archiveError instanceof Error ? archiveError.message : "Unable to archive room.");
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -112,7 +119,7 @@ export const RoomsPage = () => {
                       <button
                         type="button"
                         className="table-action-button table-action-button--danger"
-                        onClick={() => void handleArchive(room.id)}
+                        onClick={() => setArchiveRoomId(room.id)}
                       >
                         <IonIcon icon={archiveOutline} aria-hidden="true" />
                         Archive
@@ -125,6 +132,19 @@ export const RoomsPage = () => {
           </div>
         )}
       </SectionCard>
+      <ConfirmDialog
+        isOpen={!!archiveRoomId}
+        title="Archive Room"
+        message="Archive this room from active inventory?"
+        confirmLabel="Archive"
+        loading={archiving}
+        onCancel={() => {
+          if (!archiving) {
+            setArchiveRoomId(null);
+          }
+        }}
+        onConfirm={() => void handleArchive()}
+      />
     </WorkspacePage>
   );
 };
