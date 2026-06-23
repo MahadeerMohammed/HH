@@ -51,7 +51,7 @@ export const ExpensesPage = () => {
         ) : null}
     >
 
-      <SectionCard title="Expense Ledger" subtitle="Spot high-cost vendors and monitor how room-linked costs affect net margin.">
+      <SectionCard>
         {loading ? (
           <div className="centered-state centered-state--small">Loading expenses...</div>
         ) : (

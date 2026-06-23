@@ -63,7 +63,7 @@ public class RoomService {
         room.setFloorNumber(request.floorNumber());
         room.setMaxOccupancy(request.maxOccupancy());
         room.setStatus(request.status());
-        room.setBaseRate(request.baseRate());
+        room.setRoomRent(request.roomRent());
         room.setNotes(request.notes() == null ? null : request.notes().trim());
         room.setActive(true);
     }
@@ -76,7 +76,7 @@ public class RoomService {
             room.getFloorNumber(),
             room.getMaxOccupancy(),
             room.getStatus().name(),
-            room.getBaseRate(),
+            room.getRoomRent(),
             room.getNotes(),
             room.isActive(),
             room.getUpdatedAt()

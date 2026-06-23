@@ -1,0 +1,3 @@
+UPDATE rooms
+SET status = 'AVAILABLE'
+WHERE status NOT IN ('AVAILABLE', 'OCCUPIED');

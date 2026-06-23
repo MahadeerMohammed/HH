@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: hotelhub-backend
+    runtime: java
+    plan: standard
+    buildCommand: cd backend && ./mvn.cmd clean package -DskipTests
+    startCommand: java -jar backend/target/hotelhub-admin-api-1.0.0.jar
+    envVars:
+      - key: SERVER_PORT
+        value: 8080
+      - key: DB_URL
+        fromDatabase:
+          name: hotelhub-postgres
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: hotelhub-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: hotelhub-postgres
+          property: password
+      - key: SPRING_FLYWAY_ENABLED
+        value: "true"
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: "none"
+      - key: JWT_SECRET
+        sync: false
+      - key: ACCESS_TOKEN_MINUTES
+        value: "15"
+      - key: REFRESH_TOKEN_DAYS
+        value: "14"
+      - key: JWT_ISSUER
+        value: "hotelhub-admin"
+      - key: SECURE_COOKIES
+        value: "true"
+      - key: COOKIE_SAME_SITE
+        value: "None"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://hotelhub.example.com,capacitor://localhost"
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        value: "admin@example.com"
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: BOOTSTRAP_ADMIN_FULL_NAME
+        value: "Hotel Admin"
+      - key: BOOTSTRAP_SAMPLE_DATA
+        value: "false"
+
+  - type: web
+    name: hotelhub-frontend
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: "https://hotelhub-backend.onrender.com"
+
+databases:
+  - name: hotelhub-postgres
+    databaseName: hotelhub_xgsz
+    user: hotelhub
+    plan: standard

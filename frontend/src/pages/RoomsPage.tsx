@@ -1,7 +1,8 @@
 import { IonButton, IonIcon } from "@ionic/react";
-import { addOutline } from "ionicons/icons";
+import { addOutline, archiveOutline, createOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { SectionCard } from "../components/SectionCard";
 import { WorkspacePage } from "../components/WorkspacePage";
 import { useAuth } from "../contexts/AuthContext";
@@ -15,6 +16,8 @@ export const RoomsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [archiveRoomId, setArchiveRoomId] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
 
   const loadRooms = async () => {
     setLoading(true);
@@ -34,25 +37,30 @@ export const RoomsPage = () => {
     void loadRooms();
   }, []);
 
-  const handleArchive = async (roomId: string) => {
-    if (!window.confirm("Archive this room from active inventory?")) {
+  const handleArchive = async () => {
+    if (!archiveRoomId) {
       return;
     }
 
+    setArchiving(true);
     try {
-      await apiRequest(`/api/v1/rooms/${roomId}`, {
+      await apiRequest(`/api/v1/rooms/${archiveRoomId}`, {
         method: "DELETE"
       });
       setSuccess("Room archived.");
+      setArchiveRoomId(null);
       await loadRooms();
     } catch (archiveError) {
       setError(archiveError instanceof Error ? archiveError.message : "Unable to archive room.");
+    } finally {
+      setArchiving(false);
     }
   };
 
   return (
     <WorkspacePage
         title="Rooms"
+        className="rooms-page"
         actions={
           <IonButton onClick={() => navigate("/rooms/new")}>
             <IonIcon icon={addOutline} slot="start" />
@@ -80,7 +88,7 @@ export const RoomsPage = () => {
                 <tr>
                   <th>Room</th>
                   <th>Status</th>
-                  <th>Base Rate</th>
+                  <th>Room Rent</th>
                   <th>Updated</th>
                   <th />
                 </tr>
@@ -97,13 +105,23 @@ export const RoomsPage = () => {
                     <td data-label="Status">
                       <span className={`status-pill status-pill--${room.status.toLowerCase()}`}>{room.status}</span>
                     </td>
-                    <td data-label="Base Rate">{formatCurrency(room.baseRate)}</td>
+                    <td data-label="Room Rent">{formatCurrency(room.roomRent)}</td>
                     <td data-label="Updated">{formatDate(room.updatedAt)}</td>
-                    <td className="table-actions">
-                      <button type="button" onClick={() => navigate(`/rooms/new?edit=${room.id}`)}>
+                    <td className="table-actions" data-label="Actions">
+                      <button
+                        type="button"
+                        className="table-action-button"
+                        onClick={() => navigate(`/rooms/new?edit=${room.id}`)}
+                      >
+                        <IonIcon icon={createOutline} aria-hidden="true" />
                         Edit
                       </button>
-                      <button type="button" className="danger-link" onClick={() => void handleArchive(room.id)}>
+                      <button
+                        type="button"
+                        className="table-action-button table-action-button--danger"
+                        onClick={() => setArchiveRoomId(room.id)}
+                      >
+                        <IonIcon icon={archiveOutline} aria-hidden="true" />
                         Archive
                       </button>
                     </td>
@@ -114,6 +132,19 @@ export const RoomsPage = () => {
           </div>
         )}
       </SectionCard>
+      <ConfirmDialog
+        isOpen={!!archiveRoomId}
+        title="Archive Room"
+        message="Archive this room from active inventory?"
+        confirmLabel="Archive"
+        loading={archiving}
+        onCancel={() => {
+          if (!archiving) {
+            setArchiveRoomId(null);
+          }
+        }}
+        onConfirm={() => void handleArchive()}
+      />
     </WorkspacePage>
   );
 };

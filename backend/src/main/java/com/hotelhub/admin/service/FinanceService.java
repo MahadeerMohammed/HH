@@ -20,13 +20,16 @@ import com.hotelhub.admin.repository.RoomRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,8 +49,8 @@ public class FinanceService {
     public List<RevenueEntryResponse> listRevenueEntries(LocalDate fromDate, LocalDate toDate) {
         DateRange dateRange = resolveOptionalRange(fromDate, toDate);
         List<RevenueEntry> entries = dateRange == null
-            ? revenueEntryRepository.findAllByOrderByStayDateDescCreatedAtDesc()
-            : revenueEntryRepository.findByStayDateBetweenOrderByStayDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
+            ? revenueEntryRepository.findAllByOrderByCheckInDateDescCreatedAtDesc()
+            : revenueEntryRepository.findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
 
         return entries.stream()
             .map(this::toRevenueResponse)
@@ -55,23 +58,113 @@ public class FinanceService {
     }
 
     @Transactional
-    public RevenueEntryResponse createRevenueEntry(RevenueEntryRequest request) {
-        Room room = roomRepository.findByIdAndActiveTrue(request.roomId())
-            .orElseThrow(() -> new ResourceNotFoundException("Room not found."));
+    public List<RevenueEntryResponse> createRevenueEntry(RevenueEntryRequest request) {
+        if (request.rentUntilDate().isBefore(request.chargeFromDate())) {
+            throw new BadRequestException("Rent until date must be on or after rent from date.");
+        }
 
-        RevenueEntry entry = new RevenueEntry();
-        entry.setRoom(room);
-        entry.setStayDate(request.stayDate());
-        entry.setGuestName(request.guestName().trim());
-        entry.setBookingChannel(request.bookingChannel().trim());
-        entry.setNights(request.nights());
-        entry.setGrossRevenue(request.grossRevenue());
-        entry.setPlatformFee(request.platformFee());
-        entry.setTaxAmount(request.taxAmount());
-        entry.setVariableCost(request.variableCost());
-        entry.setNotes(request.notes() == null ? null : request.notes().trim());
+        UUID groupId = request.bookingGroupId() != null ? request.bookingGroupId() : UUID.randomUUID();
+        return saveRevenueEntries(groupId, request, null);
+    }
 
-        return toRevenueResponse(revenueEntryRepository.save(entry));
+    @Transactional
+    public List<RevenueEntryResponse> updateRevenueEntry(UUID bookingGroupId, RevenueEntryRequest request) {
+        List<RevenueEntry> existingEntries = revenueEntryRepository.findByBookingGroupId(bookingGroupId);
+        if (existingEntries.isEmpty()) {
+            throw new ResourceNotFoundException("Revenue entry not found.");
+        }
+        if (request.rentUntilDate().isBefore(request.chargeFromDate())) {
+            throw new BadRequestException("Rent until date must be on or after rent from date.");
+        }
+
+        RevenueEntry guestSource = existingEntries.get(0);
+        Set<UUID> previousRoomIds = existingEntries.stream()
+            .map(entry -> entry.getRoom().getId())
+            .collect(java.util.stream.Collectors.toSet());
+        revenueEntryRepository.deleteAll(existingEntries);
+        revenueEntryRepository.flush();
+
+        List<RevenueEntryResponse> responses = saveRevenueEntries(bookingGroupId, request, guestSource);
+        Set<UUID> updatedRoomIds = request.rooms()
+            .stream()
+            .map(room -> room.roomId())
+            .collect(java.util.stream.Collectors.toSet());
+        previousRoomIds.stream()
+            .filter(roomId -> !updatedRoomIds.contains(roomId))
+            .forEach(this::syncRoomStatusFromRevenueHistory);
+        return responses;
+    }
+
+    @Transactional
+    public void deleteRevenueEntry(UUID bookingGroupId) {
+        List<RevenueEntry> existingEntries = revenueEntryRepository.findByBookingGroupId(bookingGroupId);
+        if (existingEntries.isEmpty()) {
+            throw new ResourceNotFoundException("Revenue entry not found.");
+        }
+        Set<UUID> affectedRoomIds = existingEntries.stream()
+            .map(entry -> entry.getRoom().getId())
+            .collect(java.util.stream.Collectors.toSet());
+        revenueEntryRepository.deleteAll(existingEntries);
+        revenueEntryRepository.flush();
+        affectedRoomIds.forEach(this::syncRoomStatusFromRevenueHistory);
+    }
+
+    private List<RevenueEntryResponse> saveRevenueEntries(UUID bookingGroupId, RevenueEntryRequest request, RevenueEntry guestSource) {
+        List<RevenueEntry> existingEntries = revenueEntryRepository.findByBookingGroupId(bookingGroupId);
+        Map<UUID, RevenueEntry> existingMap = existingEntries.stream()
+            .collect(java.util.stream.Collectors.toMap(e -> e.getRoom().getId(), e -> e));
+
+        Set<UUID> processedRoomIds = new HashSet<>();
+        List<RevenueEntry> entriesToSave = new ArrayList<>();
+
+        for (var roomRentRequest : request.rooms()) {
+            if (!processedRoomIds.add(roomRentRequest.roomId())) {
+                throw new BadRequestException("Each room can be selected only once.");
+            }
+
+            RevenueEntry entry = existingMap.get(roomRentRequest.roomId());
+            Room room;
+            if (entry == null) {
+                room = roomRepository.findByIdAndActiveTrue(roomRentRequest.roomId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Room not found."));
+                entry = new RevenueEntry();
+                entry.setRoom(room);
+                entry.setBookingGroupId(bookingGroupId);
+                entry.setChargeFromDate(request.chargeFromDate());
+            } else {
+                room = entry.getRoom();
+            }
+
+            String rentEditReason = roomRentRequest.rentEditReason() == null ? null : roomRentRequest.rentEditReason().trim();
+            if (roomRentRequest.roomRent().compareTo(room.getRoomRent()) != 0 && (rentEditReason == null || rentEditReason.isBlank())) {
+                throw new BadRequestException("Reason for rent edit is required when room rent is changed.");
+            }
+
+            entry.setCheckInDate(request.checkInDate());
+            entry.setCheckInTime(request.checkInTime());
+            entry.setRentUntilDate(request.rentUntilDate());
+            entry.setCheckoutDate(request.checkingOut() ? request.rentUntilDate() : null);
+            entry.setCheckoutTime(request.checkingOut() ? request.checkoutTime() : null);
+            entry.setGuestName(guestSource == null ? request.guestName().trim() : guestSource.getGuestName());
+            entry.setMobileNumber(guestSource == null ? request.mobileNumber().trim() : guestSource.getMobileNumber());
+            entry.setAddress(guestSource == null ? request.address().trim() : guestSource.getAddress());
+            entry.setAadharNumber(guestSource == null ? request.aadharNumber().trim() : guestSource.getAadharNumber());
+            entry.setPurposeOfStay(guestSource == null ? request.purposeOfStay().trim() : guestSource.getPurposeOfStay());
+            entry.setRoomRent(roomRentRequest.roomRent());
+            entry.setRentEditReason(rentEditReason == null || rentEditReason.isBlank() ? null : rentEditReason);
+            
+            int totalRentDays = Math.toIntExact(ChronoUnit.DAYS.between(entry.getChargeFromDate(), entry.getRentUntilDate()) + 1);
+            entry.setRentDays(totalRentDays);
+            entry.setCheckingOut(request.checkingOut());
+            
+            entriesToSave.add(entry);
+            room.setStatus(request.checkingOut() ? RoomStatus.AVAILABLE : RoomStatus.OCCUPIED);
+        }
+
+        return revenueEntryRepository.saveAll(entriesToSave)
+            .stream()
+            .map(this::toRevenueResponse)
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -208,7 +301,7 @@ public class FinanceService {
 
     private List<RoomPerformanceResponse> buildRoomPerformance(DateRange range) {
         List<Room> rooms = roomRepository.findAllByActiveTrueOrderByRoomNumberAsc();
-        List<RevenueEntry> revenues = revenueEntryRepository.findByStayDateBetweenOrderByStayDateDescCreatedAtDesc(range.from(), range.to());
+        List<RevenueEntry> revenues = revenueEntryRepository.findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(range.from(), range.to());
         List<Expense> expenses = expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(range.from(), range.to());
 
         Map<UUID, BigDecimal> revenueByRoom = new HashMap<>();
@@ -216,11 +309,7 @@ public class FinanceService {
 
         for (RevenueEntry revenueEntry : revenues) {
             UUID roomId = revenueEntry.getRoom().getId();
-            revenueByRoom.merge(roomId, normalize(revenueEntry.getGrossRevenue()), BigDecimal::add);
-            BigDecimal revenueCosts = normalize(revenueEntry.getPlatformFee())
-                .add(normalize(revenueEntry.getTaxAmount()))
-                .add(normalize(revenueEntry.getVariableCost()));
-            costByRoom.merge(roomId, revenueCosts, BigDecimal::add);
+            revenueByRoom.merge(roomId, revenueAmount(revenueEntry), BigDecimal::add);
         }
 
         for (Expense expense : expenses) {
@@ -247,25 +336,27 @@ public class FinanceService {
     }
 
     private RevenueEntryResponse toRevenueResponse(RevenueEntry entry) {
-        BigDecimal netRevenue = normalize(entry.getGrossRevenue())
-            .subtract(normalize(entry.getPlatformFee()))
-            .subtract(normalize(entry.getTaxAmount()))
-            .subtract(normalize(entry.getVariableCost()));
-
         return new RevenueEntryResponse(
             entry.getId(),
+            entry.getBookingGroupId(),
             entry.getRoom().getId(),
             entry.getRoom().getRoomNumber(),
-            entry.getStayDate(),
+            entry.getCheckInDate(),
+            entry.getCheckInTime(),
+            entry.getChargeFromDate(),
+            entry.getRentUntilDate(),
+            entry.getCheckoutDate(),
+            entry.getCheckoutTime(),
             entry.getGuestName(),
-            entry.getBookingChannel(),
-            entry.getNights(),
-            normalize(entry.getGrossRevenue()),
-            normalize(entry.getPlatformFee()),
-            normalize(entry.getTaxAmount()),
-            normalize(entry.getVariableCost()),
-            netRevenue,
-            entry.getNotes(),
+            entry.getMobileNumber(),
+            entry.getAddress(),
+            entry.getAadharNumber(),
+            entry.getPurposeOfStay(),
+            entry.getRentDays(),
+            normalize(entry.getRoomRent()),
+            revenueAmount(entry),
+            entry.getRentEditReason(),
+            entry.isCheckingOut(),
             entry.getCreatedAt()
         );
     }
@@ -307,6 +398,25 @@ public class FinanceService {
 
     private BigDecimal normalize(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal revenueAmount(RevenueEntry entry) {
+        return normalize(entry.getRoomRent()).multiply(BigDecimal.valueOf(entry.getRentDays()));
+    }
+
+    private void syncRoomStatusFromRevenueHistory(UUID roomId) {
+        Room room = roomRepository.findByIdAndActiveTrue(roomId)
+            .orElse(null);
+        if (room == null) {
+            return;
+        }
+
+        List<RevenueEntry> roomRevenueHistory = revenueEntryRepository.findByRoomIdOrderByCreatedAtDesc(roomId);
+        if (roomRevenueHistory.isEmpty() || roomRevenueHistory.get(0).isCheckingOut()) {
+            room.setStatus(RoomStatus.AVAILABLE);
+            return;
+        }
+        room.setStatus(RoomStatus.OCCUPIED);
     }
 
     private String csv(String value) {

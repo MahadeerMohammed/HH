@@ -42,7 +42,7 @@ public class Room extends BaseEntity {
     private RoomStatus status;
 
     @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal baseRate;
+    private BigDecimal roomRent;
 
     @Column(length = 1200)
     private String notes;

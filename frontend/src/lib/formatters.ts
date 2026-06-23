@@ -12,12 +12,17 @@ export const formatNumber = (value: number) =>
 
 export const formatPercent = (value: number) => `${formatNumber(value)}%`;
 
-export const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("en-IN", {
+export const formatDate = (value: string) => {
+  const date = new Date(value);
+  if (isNaN(date.getTime())) {
+    return "N/A";
+  }
+  return new Intl.DateTimeFormat("en-IN", {
     year: "numeric",
     month: "short",
     day: "numeric"
-  }).format(new Date(value));
+  }).format(date);
+};
 
 export const today = () => new Date().toISOString().slice(0, 10);
 

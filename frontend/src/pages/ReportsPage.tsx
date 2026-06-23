@@ -64,6 +64,7 @@ export const ReportsPage = () => {
   return (
     <WorkspacePage
         title="Reports"
+        className="reports-page"
         actions={
           <form className="date-filter" onSubmit={handleFilterSubmit}>
             <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
@@ -108,13 +109,13 @@ export const ReportsPage = () => {
                 <tbody>
                   {report.roomPerformance.map((room) => (
                     <tr key={room.roomId}>
-                      <td>
+                      <td data-label="Room">
                         <strong>{room.roomNumber}</strong>
                         <small>{room.roomType}</small>
                       </td>
-                      <td>{formatCurrency(room.revenue)}</td>
-                      <td>{formatCurrency(room.expenses)}</td>
-                      <td>{formatCurrency(room.profit)}</td>
+                      <td data-label="Revenue">{formatCurrency(room.revenue)}</td>
+                      <td data-label="Expenses">{formatCurrency(room.expenses)}</td>
+                      <td data-label="Profit">{formatCurrency(room.profit)}</td>
                     </tr>
                   ))}
                 </tbody>

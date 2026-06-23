@@ -10,7 +10,7 @@ datasource db {
 model AdminUser {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email         String         @unique @db.VarChar(255)
-  fullName      String         @map("full_name") @db.VarChar(120)
+  fullName      String         @map("fullName") @db.VarChar(120)
   passwordHash  String         @map("password_hash") @db.VarChar(255)
   role          String         @db.VarChar(30)
   active        Boolean        @default(true)
@@ -29,7 +29,7 @@ model Room {
   floorNumber   Int            @map("floor_number")
   maxOccupancy  Int            @map("max_occupancy")
   status        String         @db.VarChar(30)
-  baseRate      Decimal        @map("base_rate") @db.Decimal(12, 2)
+  roomRent      Decimal        @map("room_rent") @db.Decimal(12, 2)
   notes         String?        @db.VarChar(1200)
   active        Boolean        @default(true)
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -41,22 +41,30 @@ model Room {
 }
 
 model RevenueEntry {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  roomId         String   @map("room_id") @db.Uuid
-  stayDate       DateTime @map("stay_date") @db.Date
-  guestName      String   @map("guest_name") @db.VarChar(120)
-  bookingChannel String   @map("booking_channel") @db.VarChar(80)
-  nights         Int
-  grossRevenue   Decimal  @map("gross_revenue") @db.Decimal(12, 2)
-  platformFee    Decimal  @map("platform_fee") @db.Decimal(12, 2)
-  taxAmount      Decimal  @map("tax_amount") @db.Decimal(12, 2)
-  variableCost   Decimal  @map("variable_cost") @db.Decimal(12, 2)
-  notes          String?  @db.VarChar(1200)
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
-  room           Room     @relation(fields: [roomId], references: [id])
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomId         String    @map("room_id") @db.Uuid
+  bookingGroupId String    @map("booking_group_id") @db.Uuid
+  checkInDate    DateTime  @map("check_in_date") @db.Date
+  checkInTime    DateTime  @map("check_in_time") @db.Time
+  chargeFromDate DateTime  @map("charge_from_date") @db.Date
+  rentUntilDate  DateTime  @map("rent_until_date") @db.Date
+  checkoutDate   DateTime? @map("checkout_date") @db.Date
+  checkoutTime   DateTime? @map("checkout_time") @db.Time
+  guestName      String    @map("guest_name") @db.VarChar(120)
+  mobileNumber   String    @map("mobile_number") @db.VarChar(30)
+  address        String    @map("address") @db.VarChar(1200)
+  aadharNumber   String    @map("aadhar_number") @db.VarChar(30)
+  purposeOfStay  String    @map("purpose_of_stay") @db.VarChar(255)
+  roomRent       Decimal   @map("room_rent") @db.Decimal(12, 2)
+  rentEditReason String?   @map("rent_edit_reason") @db.VarChar(500)
+  rentDays       Int       @map("rent_days")
+  checkingOut    Boolean   @map("checking_out")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  room           Room      @relation(fields: [roomId], references: [id])
 
-  @@index([stayDate], map: "idx_revenue_entries_stay_date")
+  @@index([checkInDate], map: "idx_revenue_entries_check_in_date")
+  @@index([bookingGroupId], map: "idx_revenue_entries_booking_group_id")
   @@index([roomId], map: "idx_revenue_entries_room_id")
   @@map("revenue_entries")
 }
