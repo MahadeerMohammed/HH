@@ -12,7 +12,7 @@ interface RoomFormState {
   floorNumber: string;
   maxOccupancy: string;
   status: RoomStatus;
-  baseRate: string;
+  roomRent: string;
   notes: string;
 }
 
@@ -22,7 +22,7 @@ const initialFormState: RoomFormState = {
   floorNumber: "1",
   maxOccupancy: "2",
   status: "AVAILABLE",
-  baseRate: "0",
+  roomRent: "0",
   notes: ""
 };
 
@@ -50,7 +50,7 @@ export const NewRoomPage = () => {
             floorNumber: String(room.floorNumber),
             maxOccupancy: String(room.maxOccupancy),
             status: room.status,
-            baseRate: String(room.baseRate),
+            roomRent: String(room.roomRent),
             notes: room.notes ?? ""
           });
         } else {
@@ -77,7 +77,7 @@ export const NewRoomPage = () => {
       floorNumber: Number(form.floorNumber),
       maxOccupancy: Number(form.maxOccupancy),
       status: form.status,
-      baseRate: Number(form.baseRate),
+      roomRent: Number(form.roomRent),
       notes: form.notes
     };
 
@@ -158,13 +158,13 @@ export const NewRoomPage = () => {
                 </select>
               </label>
               <label className="field">
-                <span>Base Rate</span>
+                <span>Room Rent</span>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={form.baseRate}
-                  onChange={(event) => setForm({ ...form, baseRate: event.target.value })}
+                  value={form.roomRent}
+                  onChange={(event) => setForm({ ...form, roomRent: event.target.value })}
                 />
               </label>
             </div>

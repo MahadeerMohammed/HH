@@ -19,28 +19,35 @@ export interface Room {
   floorNumber: number;
   maxOccupancy: number;
   status: RoomStatus;
-  baseRate: number;
+  roomRent: number;
   notes: string | null;
   active: boolean;
   updatedAt: string;
 }
 
-export type RoomStatus = "AVAILABLE" | "OCCUPIED" | "CLEANING" | "MAINTENANCE" | "BLOCKED";
+export type RoomStatus = "AVAILABLE" | "OCCUPIED";
 
 export interface RevenueEntry {
   id: string;
+  bookingGroupId: string;
   roomId: string;
   roomNumber: string;
-  stayDate: string;
+  checkInDate: string;
+  checkInTime: string;
+  chargeFromDate: string;
+  rentUntilDate: string;
+  checkoutDate: string | null;
+  checkoutTime: string | null;
   guestName: string;
-  bookingChannel: string;
-  nights: number;
+  mobileNumber: string;
+  address: string;
+  aadharNumber: string;
+  purposeOfStay: string;
+  rentDays: number;
+  roomRent: number;
   grossRevenue: number;
-  platformFee: number;
-  taxAmount: number;
-  variableCost: number;
-  netRevenue: number;
-  notes: string | null;
+  rentEditReason: string | null;
+  checkingOut: boolean;
   createdAt: string;
 }
 
@@ -116,10 +123,7 @@ export interface ApiError {
 
 export const ROOM_STATUS_OPTIONS: RoomStatus[] = [
   "AVAILABLE",
-  "OCCUPIED",
-  "CLEANING",
-  "MAINTENANCE",
-  "BLOCKED"
+  "OCCUPIED"
 ];
 
 export const EXPENSE_CATEGORY_OPTIONS: ExpenseCategory[] = [

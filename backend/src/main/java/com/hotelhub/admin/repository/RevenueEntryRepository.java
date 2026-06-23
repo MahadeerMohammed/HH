@@ -13,14 +13,20 @@ import org.springframework.data.repository.query.Param;
 public interface RevenueEntryRepository extends JpaRepository<RevenueEntry, UUID> {
 
     @EntityGraph(attributePaths = "room")
-    List<RevenueEntry> findAllByOrderByStayDateDescCreatedAtDesc();
+    List<RevenueEntry> findAllByOrderByCheckInDateDescCreatedAtDesc();
 
     @EntityGraph(attributePaths = "room")
-    List<RevenueEntry> findByStayDateBetweenOrderByStayDateDescCreatedAtDesc(LocalDate from, LocalDate to);
+    List<RevenueEntry> findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(LocalDate from, LocalDate to);
 
-    @Query("select coalesce(sum(r.grossRevenue), 0) from RevenueEntry r where r.stayDate between :from and :to")
+    @EntityGraph(attributePaths = "room")
+    List<RevenueEntry> findByRoomIdOrderByCreatedAtDesc(UUID roomId);
+
+    @EntityGraph(attributePaths = "room")
+    List<RevenueEntry> findByBookingGroupId(UUID bookingGroupId);
+
+    @Query("select coalesce(sum(r.roomRent * r.rentDays), 0) from RevenueEntry r where r.checkInDate between :from and :to")
     BigDecimal sumGrossRevenueBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 
-    @Query("select coalesce(sum(r.platformFee + r.taxAmount + r.variableCost), 0) from RevenueEntry r where r.stayDate between :from and :to")
+    @Query("select coalesce(sum(r.roomRent * 0), 0) from RevenueEntry r where r.checkInDate between :from and :to")
     BigDecimal sumRevenueCostsBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 }

@@ -1,5 +1,5 @@
 import { IonButton, IonIcon } from "@ionic/react";
-import { addOutline } from "ionicons/icons";
+import { addOutline, archiveOutline, createOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SectionCard } from "../components/SectionCard";
@@ -53,6 +53,7 @@ export const RoomsPage = () => {
   return (
     <WorkspacePage
         title="Rooms"
+        className="rooms-page"
         actions={
           <IonButton onClick={() => navigate("/rooms/new")}>
             <IonIcon icon={addOutline} slot="start" />
@@ -80,7 +81,7 @@ export const RoomsPage = () => {
                 <tr>
                   <th>Room</th>
                   <th>Status</th>
-                  <th>Base Rate</th>
+                  <th>Room Rent</th>
                   <th>Updated</th>
                   <th />
                 </tr>
@@ -97,13 +98,23 @@ export const RoomsPage = () => {
                     <td data-label="Status">
                       <span className={`status-pill status-pill--${room.status.toLowerCase()}`}>{room.status}</span>
                     </td>
-                    <td data-label="Base Rate">{formatCurrency(room.baseRate)}</td>
+                    <td data-label="Room Rent">{formatCurrency(room.roomRent)}</td>
                     <td data-label="Updated">{formatDate(room.updatedAt)}</td>
-                    <td className="table-actions">
-                      <button type="button" onClick={() => navigate(`/rooms/new?edit=${room.id}`)}>
+                    <td className="table-actions" data-label="Actions">
+                      <button
+                        type="button"
+                        className="table-action-button"
+                        onClick={() => navigate(`/rooms/new?edit=${room.id}`)}
+                      >
+                        <IonIcon icon={createOutline} aria-hidden="true" />
                         Edit
                       </button>
-                      <button type="button" className="danger-link" onClick={() => void handleArchive(room.id)}>
+                      <button
+                        type="button"
+                        className="table-action-button table-action-button--danger"
+                        onClick={() => void handleArchive(room.id)}
+                      >
+                        <IonIcon icon={archiveOutline} aria-hidden="true" />
                         Archive
                       </button>
                     </td>

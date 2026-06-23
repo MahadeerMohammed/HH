@@ -7,10 +7,11 @@ interface WorkspacePageProps {
   actions?: ReactNode;
   notices?: ReactNode;
   children: ReactNode;
+  className?: string;
 }
 
-export const WorkspacePage = ({ title, description, actions, notices, children }: WorkspacePageProps) => (
-  <section className="workspace-page">
+export const WorkspacePage = ({ title, description, actions, notices, children, className }: WorkspacePageProps) => (
+  <section className={["workspace-page", className].filter(Boolean).join(" ")}>
     <div className="workspace-page__header">
       <PageHeader title={title} description={description} actions={actions} />
       {notices ? <div className="workspace-page__notices">{notices}</div> : null}

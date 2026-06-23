@@ -14,9 +14,11 @@ import com.hotelhub.admin.repository.RevenueEntryRepository;
 import com.hotelhub.admin.repository.RoomRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -65,16 +67,16 @@ public class BootstrapService implements ApplicationRunner {
         rooms.add(buildRoom("101", "Deluxe King", 1, 2, RoomStatus.AVAILABLE, new BigDecimal("145.00")));
         rooms.add(buildRoom("102", "Executive Twin", 1, 2, RoomStatus.OCCUPIED, new BigDecimal("162.00")));
         rooms.add(buildRoom("201", "Family Suite", 2, 4, RoomStatus.AVAILABLE, new BigDecimal("210.00")));
-        rooms.add(buildRoom("202", "Premium King", 2, 2, RoomStatus.CLEANING, new BigDecimal("185.00")));
-        rooms.add(buildRoom("301", "Penthouse Suite", 3, 4, RoomStatus.MAINTENANCE, new BigDecimal("340.00")));
+        rooms.add(buildRoom("202", "Premium King", 2, 2, RoomStatus.AVAILABLE, new BigDecimal("185.00")));
+        rooms.add(buildRoom("301", "Penthouse Suite", 3, 4, RoomStatus.AVAILABLE, new BigDecimal("340.00")));
         roomRepository.saveAll(rooms);
 
         LocalDate today = LocalDate.now();
         List<RevenueEntry> revenueEntries = new ArrayList<>();
-        revenueEntries.add(buildRevenueEntry(rooms.get(0), today.minusDays(7), "Anika Sen", "Direct", 2, "290.00", "0.00", "26.10", "24.00"));
-        revenueEntries.add(buildRevenueEntry(rooms.get(1), today.minusDays(5), "Carlos Reed", "Booking.com", 3, "486.00", "58.32", "43.74", "39.00"));
-        revenueEntries.add(buildRevenueEntry(rooms.get(2), today.minusDays(3), "Family Patel", "Direct", 2, "420.00", "0.00", "37.80", "30.00"));
-        revenueEntries.add(buildRevenueEntry(rooms.get(3), today.minusDays(1), "Leah Thomas", "Expedia", 1, "185.00", "22.20", "16.65", "12.00"));
+        revenueEntries.add(buildRevenueEntry(rooms.get(0), today.minusDays(7), "Anika Sen", 2, "145.00"));
+        revenueEntries.add(buildRevenueEntry(rooms.get(1), today.minusDays(5), "Carlos Reed", 3, "162.00"));
+        revenueEntries.add(buildRevenueEntry(rooms.get(2), today.minusDays(3), "Family Patel", 2, "210.00"));
+        revenueEntries.add(buildRevenueEntry(rooms.get(3), today.minusDays(1), "Leah Thomas", 1, "185.00"));
         revenueEntryRepository.saveAll(revenueEntries);
 
         List<Expense> expenses = new ArrayList<>();
@@ -85,14 +87,14 @@ public class BootstrapService implements ApplicationRunner {
         expenseRepository.saveAll(expenses);
     }
 
-    private Room buildRoom(String roomNumber, String roomType, int floor, int occupancy, RoomStatus status, BigDecimal baseRate) {
+    private Room buildRoom(String roomNumber, String roomType, int floor, int occupancy, RoomStatus status, BigDecimal roomRent) {
         Room room = new Room();
         room.setRoomNumber(roomNumber);
         room.setRoomType(roomType);
         room.setFloorNumber(floor);
         room.setMaxOccupancy(occupancy);
         room.setStatus(status);
-        room.setBaseRate(baseRate);
+        room.setRoomRent(roomRent);
         room.setNotes("Auto-seeded sample room.");
         room.setActive(true);
         return room;
@@ -100,26 +102,26 @@ public class BootstrapService implements ApplicationRunner {
 
     private RevenueEntry buildRevenueEntry(
         Room room,
-        LocalDate stayDate,
+        LocalDate checkInDate,
         String guestName,
-        String bookingChannel,
-        int nights,
-        String grossRevenue,
-        String platformFee,
-        String taxAmount,
-        String variableCost
+        int rentDays,
+        String roomRent
     ) {
         RevenueEntry revenueEntry = new RevenueEntry();
         revenueEntry.setRoom(room);
-        revenueEntry.setStayDate(stayDate);
+        revenueEntry.setBookingGroupId(UUID.randomUUID());
+        revenueEntry.setCheckInDate(checkInDate);
+        revenueEntry.setCheckInTime(LocalTime.NOON);
+        revenueEntry.setChargeFromDate(checkInDate);
+        revenueEntry.setRentUntilDate(checkInDate.plusDays(rentDays - 1L));
         revenueEntry.setGuestName(guestName);
-        revenueEntry.setBookingChannel(bookingChannel);
-        revenueEntry.setNights(nights);
-        revenueEntry.setGrossRevenue(new BigDecimal(grossRevenue));
-        revenueEntry.setPlatformFee(new BigDecimal(platformFee));
-        revenueEntry.setTaxAmount(new BigDecimal(taxAmount));
-        revenueEntry.setVariableCost(new BigDecimal(variableCost));
-        revenueEntry.setNotes("Auto-seeded booking revenue.");
+        revenueEntry.setMobileNumber("9999999999");
+        revenueEntry.setAddress("Auto-seeded guest address.");
+        revenueEntry.setAadharNumber("000000000000");
+        revenueEntry.setPurposeOfStay("Sample booking");
+        revenueEntry.setRentDays(rentDays);
+        revenueEntry.setRoomRent(new BigDecimal(roomRent));
+        revenueEntry.setCheckingOut(false);
         return revenueEntry;
     }
 

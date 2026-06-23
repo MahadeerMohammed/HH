@@ -11,7 +11,7 @@ public record RoomResponse(
     Integer floorNumber,
     Integer maxOccupancy,
     String status,
-    BigDecimal baseRate,
+    BigDecimal roomRent,
     String notes,
     boolean active,
     Instant updatedAt

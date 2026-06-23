@@ -15,7 +15,7 @@ public record RoomRequest(
     @NotNull @Min(0) @Max(200) Integer floorNumber,
     @NotNull @Min(1) @Max(20) Integer maxOccupancy,
     @NotNull RoomStatus status,
-    @NotNull @DecimalMin("0.0") BigDecimal baseRate,
+    @NotNull @DecimalMin("0.0") BigDecimal roomRent,
     @Size(max = 1200) String notes
 ) {
 }

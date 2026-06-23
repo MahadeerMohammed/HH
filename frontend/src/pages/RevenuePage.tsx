@@ -1,4 +1,4 @@
-import { IonButton } from "@ionic/react";
+import { IonButton, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from "@ionic/react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MetricCard } from "../components/MetricCard";
@@ -8,10 +8,23 @@ import { useAuth } from "../contexts/AuthContext";
 import { formatCurrency, formatDate } from "../lib/formatters";
 import type { RevenueEntry } from "../types";
 
+interface ConsolidatedBooking {
+  bookingGroupId: string;
+  guestName: string;
+  mobileNumber: string;
+  rooms: string[];
+  totalRevenue: number;
+  maxDays: number;
+  status: "ACTIVE" | "CHECKED OUT";
+  entries: RevenueEntry[];
+  lastUpdate: string;
+}
+
 export const RevenuePage = () => {
   const navigate = useNavigate();
   const { apiRequest } = useAuth();
   const [entries, setEntries] = useState<RevenueEntry[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<ConsolidatedBooking | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,18 +46,62 @@ export const RevenuePage = () => {
     void loadData();
   }, []);
 
+  const handleDelete = async (bookingGroupId: string) => {
+    if (!window.confirm("Permanently delete this booking group? This cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await apiRequest(`/api/v1/revenue/${bookingGroupId}`, {
+        method: "DELETE"
+      });
+      await loadData();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete revenue.");
+    }
+  };
+
+  const consolidatedBookings = entries.reduce<ConsolidatedBooking[]>((acc, entry) => {
+    let booking = acc.find((b) => b.bookingGroupId === entry.bookingGroupId);
+    if (!booking) {
+      booking = {
+        bookingGroupId: entry.bookingGroupId,
+        guestName: entry.guestName,
+        mobileNumber: entry.mobileNumber,
+        rooms: [],
+        totalRevenue: 0,
+        maxDays: 0,
+        status: "CHECKED OUT",
+        entries: [],
+        lastUpdate: entry.createdAt
+      };
+      acc.push(booking);
+    }
+
+    if (!booking.rooms.includes(entry.roomNumber)) {
+      booking.rooms.push(entry.roomNumber);
+    }
+    booking.totalRevenue += entry.grossRevenue;
+    booking.maxDays = Math.max(booking.maxDays, entry.rentDays);
+    if (!entry.checkingOut) {
+      booking.status = "ACTIVE";
+    }
+    booking.entries.push(entry);
+    if (new Date(entry.createdAt) > new Date(booking.lastUpdate)) {
+        booking.lastUpdate = entry.createdAt;
+    }
+
+    return acc;
+  }, []).sort((a, b) => new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime());
+
   const totalGrossRevenue = entries.reduce((sum, entry) => sum + entry.grossRevenue, 0);
-  const totalNetRevenue = entries.reduce((sum, entry) => sum + entry.netRevenue, 0);
-  const totalRevenueCosts = entries.reduce(
-    (sum, entry) => sum + entry.platformFee + entry.taxAmount + entry.variableCost,
-    0
-  );
-  const totalNights = entries.reduce((sum, entry) => sum + entry.nights, 0);
-  const averageBookingValue = entries.length > 0 ? totalGrossRevenue / entries.length : 0;
+  const totalRentDays = entries.reduce((sum, entry) => sum + entry.rentDays, 0);
+  const averageBookingValue = consolidatedBookings.length > 0 ? totalGrossRevenue / consolidatedBookings.length : 0;
 
   return (
     <WorkspacePage
       title="Revenue"
+      className="revenue-page"
       actions={
         <IonButton onClick={() => navigate("/bookings/new")}>
           New Room Booking
@@ -53,18 +110,13 @@ export const RevenuePage = () => {
       notices={error ? <div className="alert alert--danger">{error}</div> : null}
     >
       <div className="metrics-grid">
-        <MetricCard label="Bookings" value={String(entries.length)} />
-        <MetricCard label="Booked Nights" value={String(totalNights)} />
+        <MetricCard label="Guest Stays" value={String(consolidatedBookings.length)} />
+        <MetricCard label="Total Room Days" value={String(totalRentDays)} />
         <MetricCard label="Gross Revenue" value={formatCurrency(totalGrossRevenue)} tone="success" />
-        <MetricCard label="Revenue Costs" value={formatCurrency(totalRevenueCosts)} tone="warning" />
-        <MetricCard label="Net Revenue" value={formatCurrency(totalNetRevenue)} tone="success" />
-        <MetricCard label="Avg Booking Value" value={formatCurrency(averageBookingValue)} />
+        <MetricCard label="Avg Stay Value" value={formatCurrency(averageBookingValue)} />
       </div>
 
-      <SectionCard
-        title="Revenue Ledger"
-        subtitle="Every room booking flows here automatically, so there is no separate revenue entry form on this screen anymore."
-      >
+      <SectionCard>
         {loading ? (
           <div className="centered-state centered-state--small">Loading revenue...</div>
         ) : (
@@ -72,28 +124,43 @@ export const RevenuePage = () => {
             <table>
               <thead>
                 <tr>
-                  <th>Stay</th>
-                  <th>Room</th>
-                  <th>Nights</th>
-                  <th>Gross</th>
-                  <th>Costs</th>
-                  <th>Net</th>
-                  <th>Channel</th>
+                  <th>Guest</th>
+                  <th>Rooms</th>
+                  <th>Status</th>
+                  <th>Duration</th>
+                  <th>Total</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.id}>
-                    <td data-label="Stay">
-                      <strong>{entry.guestName}</strong>
-                      <small>{formatDate(entry.stayDate)}</small>
+                {consolidatedBookings.map((booking) => (
+                  <tr key={booking.bookingGroupId}>
+                    <td data-label="Guest">
+                      <strong>{booking.guestName}</strong>
+                      <small>{booking.mobileNumber}</small>
                     </td>
-                    <td data-label="Room">{entry.roomNumber}</td>
-                    <td data-label="Nights">{entry.nights}</td>
-                    <td data-label="Gross">{formatCurrency(entry.grossRevenue)}</td>
-                    <td data-label="Costs">{formatCurrency(entry.platformFee + entry.taxAmount + entry.variableCost)}</td>
-                    <td data-label="Net">{formatCurrency(entry.netRevenue)}</td>
-                    <td data-label="Channel">{entry.bookingChannel}</td>
+                    <td data-label="Rooms">{booking.rooms.join(", ")}</td>
+                    <td data-label="Status">
+                      <span className={`status-pill ${booking.status === "ACTIVE" ? "status-pill--occupied" : "status-pill--available"}`}>
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td data-label="Duration">{booking.maxDays} Days</td>
+                    <td data-label="Total">
+                      <strong>{formatCurrency(booking.totalRevenue)}</strong>
+                    </td>
+                    <td className="table-actions" data-label="Actions">
+                      <button type="button" className="table-action-button" onClick={() => setSelectedBooking(booking)}>
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        className="table-action-button table-action-button--danger"
+                        onClick={() => void handleDelete(booking.bookingGroupId)}
+                      >
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -101,6 +168,75 @@ export const RevenuePage = () => {
           </div>
         )}
       </SectionCard>
+
+      <IonModal isOpen={!!selectedBooking} onDidDismiss={() => setSelectedBooking(null)}>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Stay Details - {selectedBooking?.guestName}</IonTitle>
+            <IonButton slot="end" fill="clear" onClick={() => setSelectedBooking(null)}>Close</IonButton>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          <div className="page-stack">
+            <SectionCard title="Guest Information">
+              <div className="form-grid">
+                <div className="field"><span>Name</span><strong>{selectedBooking?.guestName}</strong></div>
+                <div className="field"><span>Mobile</span><strong>{selectedBooking?.mobileNumber}</strong></div>
+                <div className="field"><span>Aadhar</span><strong>{selectedBooking?.entries[0]?.aadharNumber}</strong></div>
+                <div className="field"><span>Check-in</span><strong>{formatDate(selectedBooking?.entries[0]?.checkInDate ?? "")} {selectedBooking?.entries[0]?.checkInTime}</strong></div>
+              </div>
+              <div className="field" style={{ marginTop: '1rem' }}>
+                <span>Address</span>
+                <p style={{ margin: 0 }}>{selectedBooking?.entries[0]?.address}</p>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Room Breakdown">
+              <div className="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Room</th>
+                      <th>Period</th>
+                      <th>Days</th>
+                      <th>Rent</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedBooking?.entries.map((entry) => (
+                      <tr key={entry.id}>
+                        <td data-label="Room">
+                          <div className="room-detail-line">
+                            <strong>{entry.roomNumber}</strong>
+                            {selectedBooking.entries.length > 1 && entry.checkingOut ? (
+                              <span className="status-pill status-pill--available status-pill--compact">
+                                Checked Out
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td data-label="Period">
+                          {formatDate(entry.chargeFromDate)} to {formatDate(entry.rentUntilDate)}
+                        </td>
+                        <td data-label="Days">{entry.rentDays}</td>
+                        <td data-label="Rent">{formatCurrency(entry.roomRent)}</td>
+                        <td data-label="Subtotal">{formatCurrency(entry.grossRevenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'right', padding: '1rem' }}><strong>Grand Total</strong></td>
+                      <td style={{ padding: '1rem' }}><strong>{formatCurrency(selectedBooking?.totalRevenue ?? 0)}</strong></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </SectionCard>
+          </div>
+        </IonContent>
+      </IonModal>
     </WorkspacePage>
   );
 };
