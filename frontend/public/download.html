@@ -131,14 +131,36 @@
         <p>Install the Android admin app for room, revenue, expense, and report management.</p>
       </section>
       <section class="actions">
-        <a class="button primary" href="/downloads/hotelhub-admin.apk" download>
+        <a id="apk-download" class="button primary" href="/downloads/hotelhub-admin.apk" download>
           Download Android APK
         </a>
         <a class="button secondary" href="https://hotelhub-api-rldv.onrender.com/actuator/health">
           Check Backend Status
         </a>
-        <p class="note">Version 1.0.0. Android may ask you to allow installation from your browser before opening the APK.</p>
+        <p class="note">Version <span id="apk-version">1.0.0</span>. Android may ask you to allow installation from your browser before opening the APK.</p>
       </section>
     </main>
+    <script>
+      (async () => {
+        const versionNode = document.getElementById("apk-version");
+        const downloadNode = document.getElementById("apk-download");
+
+        try {
+          const response = await fetch("/version.json", { cache: "no-store" });
+          if (!response.ok) {
+            return;
+          }
+
+          const version = await response.json();
+          if (version?.versionName) {
+            versionNode.textContent = version.versionName;
+            downloadNode.textContent = `Download Android APK v${version.versionName}`;
+            downloadNode.href = `/downloads/hotelhub-admin.apk?v=${encodeURIComponent(version.versionName)}`;
+          }
+        } catch {
+          // Keep the built-in fallback version text if the metadata request fails.
+        }
+      })();
+    </script>
   </body>
 </html>

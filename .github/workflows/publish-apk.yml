@@ -1,0 +1,155 @@
+name: Build APK Download
+
+on:
+  push:
+    branches:
+      - prod
+    paths-ignore:
+      - "frontend/public/downloads/hotelhub-admin.apk"
+      - "frontend/public/version.json"
+  workflow_dispatch:
+
+concurrency:
+  group: build-apk-download-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: prod
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build mobile web bundle
+        working-directory: frontend
+        run: npm run build:mobile
+
+      - name: Ensure Android project exists
+        working-directory: frontend
+        run: |
+          if [ ! -f android/gradlew ]; then
+            npx cap add android
+          fi
+
+      - name: Sync Capacitor Android project
+        working-directory: frontend
+        run: npx cap sync android
+
+      - name: Compute APK version
+        id: version
+        run: |
+          version_code="${GITHUB_RUN_NUMBER}"
+          version_name="1.0.${GITHUB_RUN_NUMBER}"
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "version_code=${version_code}" >> "$GITHUB_OUTPUT"
+          echo "version_name=${version_name}" >> "$GITHUB_OUTPUT"
+          echo "built_at=${built_at}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Android signing
+        working-directory: frontend/android
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_RELEASE_KEYSTORE_BASE64" ] || [ -z "$ANDROID_RELEASE_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_RELEASE_KEY_ALIAS" ] || [ -z "$ANDROID_RELEASE_KEY_PASSWORD" ]; then
+            echo "Android release signing secrets are missing."
+            exit 1
+          fi
+
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
+          {
+            echo "storeFile=release-keystore.jks"
+            echo "storePassword=$ANDROID_RELEASE_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_RELEASE_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_RELEASE_KEY_PASSWORD"
+          } > keystore.properties
+
+      - name: Configure release signing
+        working-directory: frontend/android
+        env:
+          APK_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          APK_VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const path = "app/build.gradle";
+          let text = fs.readFileSync(path, "utf8");
+
+          text = text.replace(/versionCode\s+\d+/, `versionCode ${process.env.APK_VERSION_CODE}`);
+          text = text.replace(/versionName\s+"[^"]+"/, `versionName "${process.env.APK_VERSION_NAME}"`);
+
+          if (!text.includes("signingConfigs {")) {
+            text = text.replace(
+              "android {\n",
+              `android {\n    signingConfigs {\n        release {\n            def props = new Properties()\n            def propsFile = rootProject.file("keystore.properties")\n            if (propsFile.exists()) {\n                propsFile.withInputStream { stream -> props.load(stream) }\n            }\n            storeFile rootProject.file(props.getProperty("storeFile"))\n            storePassword props.getProperty("storePassword")\n            keyAlias props.getProperty("keyAlias")\n            keyPassword props.getProperty("keyPassword")\n        }\n    }\n`
+            );
+          }
+
+          text = text.replace(
+            /buildTypes\s*\{\s*\n\s*release\s*\{\s*\n/,
+            match => match.includes("signingConfig") ? match : `${match}            signingConfig signingConfigs.release\n`
+          );
+
+          fs.writeFileSync(path, text);
+          NODE
+
+      - name: Build signed release APK
+        working-directory: frontend/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Replace downloadable APK
+        run: |
+          mkdir -p frontend/public/downloads
+          cp frontend/android/app/build/outputs/apk/release/app-release.apk frontend/public/downloads/hotelhub-admin.apk
+          node <<'NODE'
+          const fs = require("fs");
+          const version = {
+            versionCode: Number(process.env.VERSION_CODE),
+            versionName: process.env.VERSION_NAME,
+            builtAt: process.env.BUILT_AT
+          };
+          fs.writeFileSync("frontend/public/version.json", `${JSON.stringify(version, null, 2)}\n`);
+          NODE
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          BUILT_AT: ${{ steps.version.outputs.built_at }}
+
+      - name: Commit APK update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f frontend/public/downloads/hotelhub-admin.apk frontend/public/version.json
+          if git diff --cached --quiet; then
+            echo "No APK changes to commit."
+            exit 0
+          fi
+          git commit -m "Build APK download v${{ steps.version.outputs.version_name }}"
+          git push origin HEAD:prod

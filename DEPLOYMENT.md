@@ -118,6 +118,33 @@ Before deploying to production:
 - [ ] Check `CORS_ALLOWED_ORIGINS` includes frontend domain
 - [ ] Verify database connection string is correct
 
+### APK Versioning
+For production, merge to `prod` and let GitHub Actions build the signed APK.
+
+The workflow:
+1. Builds the mobile frontend
+2. Generates/syncs the Capacitor Android project
+3. Builds a signed release APK
+4. Replaces `frontend/public/downloads/hotelhub-admin.apk`
+5. Updates `frontend/public/version.json`
+6. Commits those generated files back to `prod`
+
+The download page reads `frontend/public/version.json` and downloads `/downloads/hotelhub-admin.apk`.
+
+### APK CI Secrets
+The GitHub Actions APK workflow needs these repository secrets:
+- `ANDROID_RELEASE_KEYSTORE_BASE64`
+- `ANDROID_RELEASE_KEYSTORE_PASSWORD`
+- `ANDROID_RELEASE_KEY_ALIAS`
+- `ANDROID_RELEASE_KEY_PASSWORD`
+
+Current local signing values:
+- Alias: `hotelhub`
+- Store password: `cB6DX83mCbkLpnZb5KLG3EA9`
+- Key password: `cB6DX83mCbkLpnZb5KLG3EA9`
+
+Create `ANDROID_RELEASE_KEYSTORE_BASE64` from `frontend/android/release-keystore.jks`.
+
 ### Keep-Alive Ping
 If you want to reduce cold starts on an idle Render service, use a single lightweight health ping on a schedule.
 
