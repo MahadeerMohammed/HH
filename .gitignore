@@ -15,7 +15,17 @@ frontend/android/
 frontend/ios/
 frontend/.capacitor/
 
+# ============================================
+# Environment Variables - NEVER COMMIT
+# ============================================
+# All .env files are git-ignored for security
+# - main branch: use .env.example + local .env (NOT committed)
+# - prod branch: contains production .env files
+# - Examples (.env.*.example) ARE committed as templates
+
 .env
 .env.*
-!**/.env.example
+!.env.example
 !.env.prod.example
+!.env.render.example
+!**/.env.example
