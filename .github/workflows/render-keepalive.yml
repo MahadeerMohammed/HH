@@ -12,7 +12,7 @@ concurrency:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Ping Render health endpoint
         env:
@@ -25,7 +25,7 @@ jobs:
 
           curl --fail --silent --show-error \
             --connect-timeout 5 \
-            --max-time 10 \
+            --max-time 60 \
             -H "User-Agent: HotelHubKeepAlive/1.0" \
             -H "Cache-Control: no-cache" \
             "$KEEPALIVE_URL" \
