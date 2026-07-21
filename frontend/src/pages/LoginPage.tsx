@@ -32,35 +32,26 @@ export const LoginPage = () => {
     <IonPage>
       <IonContent fullscreen>
         <div className="login-layout">
-          <section className="login-hero">
-            <span className="login-hero__pill">Admin-only operations suite</span>
-            <h1>Control room inventory, revenue, expenses, and reporting from one secure workspace.</h1>
-            <p>
-              HotelHub Admin is designed for owners, general managers, and finance teams who need a single command
-              center across iOS, Android, tablets, and desktop browsers.
-            </p>
-
-            <div className="login-hero__stats">
-              <article>
-                <strong>Room lifecycle</strong>
-                <span>Availability, cleaning, maintenance, and archive controls.</span>
-              </article>
-              <article>
-                <strong>Finance visibility</strong>
-                <span>Track gross revenue, channel fees, variable costs, and operating expenses.</span>
-              </article>
-              <article>
-                <strong>Monthly reporting</strong>
-                <span>See trends, occupancy, net profit, and room profitability at a glance.</span>
-              </article>
-            </div>
-          </section>
-
           <section className="login-card">
-            <div>
-              <p className="page-header__eyebrow">Secure Sign-In</p>
-              <h2>Welcome back</h2>
-              <p>Use your admin credentials to open the command center.</p>
+            <div className="login-illustration" aria-hidden="true">
+              <div className="login-illustration__sun" />
+              <div className="login-illustration__building">
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="login-illustration__base" />
+            </div>
+
+            <div className="login-brand">
+              <div className="login-brand__mark" aria-hidden="true">AR</div>
+              <div>
+                <p>Alsabah Residency</p>
+                <h2>Sign in</h2>
+              </div>
             </div>
 
             <form className="stack-form" onSubmit={handleSubmit} noValidate>
@@ -108,16 +99,9 @@ export const LoginPage = () => {
                 disabled={submitting || !email || !password}
                 aria-busy={submitting}
               >
-                {submitting ? "Signing in..." : "Open Admin Console"}
+                {submitting ? "Signing in..." : "Sign In"}
               </IonButton>
             </form>
-
-            <div className="login-card__footnote">
-              <small>
-                Replace the seeded credentials in your environment before production deployment. Refresh sessions use an
-                HttpOnly cookie and short-lived access token.
-              </small>
-            </div>
           </section>
         </div>
       </IonContent>
