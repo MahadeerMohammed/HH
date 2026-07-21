@@ -684,6 +684,41 @@ small {
   box-shadow: 0 0 0 4px rgba(15, 61, 62, 0.08);
 }
 
+.password-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input input {
+  padding-right: 3rem;
+}
+
+.password-input__toggle {
+  position: absolute;
+  right: 0.45rem;
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #4f6060;
+  cursor: pointer;
+}
+
+.password-input__toggle:hover,
+.password-input__toggle:focus-visible {
+  background: rgba(15, 61, 62, 0.08);
+  color: #0f3d3e;
+}
+
+.password-input__toggle ion-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 /* Mobile improvements for forms */
 @media (max-width: 768px) {
   .field input,

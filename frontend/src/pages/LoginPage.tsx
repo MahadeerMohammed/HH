@@ -1,4 +1,5 @@
-import { IonButton, IonContent, IonPage } from "@ionic/react";
+import { IonButton, IonContent, IonIcon, IonPage } from "@ionic/react";
+import { eyeOffOutline, eyeOutline } from "ionicons/icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,6 +9,7 @@ export const LoginPage = () => {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -77,17 +79,27 @@ export const LoginPage = () => {
 
               <label className="field">
                 <span>Password</span>
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  aria-required="true"
-                  placeholder="••••••••"
-                />
+                <div className="password-input">
+                  <input
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    aria-required="true"
+                    placeholder="********"
+                  />
+                  <button
+                    type="button"
+                    className="password-input__toggle"
+                    onClick={() => setShowPassword((current) => !current)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
+                  >
+                    <IonIcon icon={showPassword ? eyeOffOutline : eyeOutline} aria-hidden="true" />
+                  </button>
+                </div>
               </label>
-
               {error ? <div className="alert alert--danger" role="alert">{error}</div> : null}
 
               <IonButton 
