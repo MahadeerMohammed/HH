@@ -77,4 +77,9 @@ public class FinanceController {
     public ExpenseResponse createExpense(@Valid @RequestBody ExpenseRequest request) {
         return financeService.createExpense(request);
     }
+
+    @PutMapping("/expenses/{expenseId}")
+    public ExpenseResponse updateExpense(@PathVariable UUID expenseId, @Valid @RequestBody ExpenseRequest request) {
+        return financeService.updateExpense(expenseId, request);
+    }
 }

@@ -51,9 +51,17 @@ const daysBetweenInclusive = (from: string, to: string) => {
 
 const normalizeAadhar = (value: string) => value.replace(/\D/g, "").slice(0, 12);
 
-export const NewRoomBookingPage = () => {
+interface NewRoomBookingPageProps {
+  embedded?: boolean;
+  editEntries?: RevenueEntry[] | null;
+  onSaved?: () => void;
+  onCancel?: () => void;
+}
+
+export const NewRoomBookingPage = ({ embedded = false, editEntries = null, onSaved, onCancel }: NewRoomBookingPageProps) => {
   const navigate = useNavigate();
   const { apiRequest } = useAuth();
+  const editBookingGroupId = editEntries?.[0]?.bookingGroupId ?? null;
   const [rooms, setRooms] = useState<Room[]>([]);
   const [revenueEntries, setRevenueEntries] = useState<RevenueEntry[]>([]);
   const [selectedRooms, setSelectedRooms] = useState<SelectedRoomRent[]>([]);
@@ -78,7 +86,33 @@ export const NewRoomBookingPage = () => {
         setRevenueEntries(revenuePayload);
 
         const firstAvailable = roomsPayload.find((room) => room.status === "AVAILABLE") ?? roomsPayload[0];
-        if (firstAvailable) {
+        if (editEntries?.length) {
+          const firstEntry = editEntries[0];
+          setForm({
+            checkInDate: firstEntry.checkInDate,
+            checkInTime: firstEntry.checkInTime,
+            chargeFromDate: firstEntry.chargeFromDate,
+            rentUntilDate: firstEntry.rentUntilDate,
+            guestName: firstEntry.guestName,
+            mobileNumber: firstEntry.mobileNumber,
+            address: firstEntry.address,
+            aadharNumber: firstEntry.aadharNumber,
+            purposeOfStay: firstEntry.purposeOfStay,
+            checkingOut: editEntries.every((entry) => entry.checkingOut),
+            checkoutTime: firstEntry.checkoutTime ?? "12:00"
+          });
+          setSelectedRooms(
+            editEntries.map((entry) => {
+              const room = roomsPayload.find((candidate) => candidate.id === entry.roomId);
+              return {
+                roomId: entry.roomId,
+                roomRent: String(entry.roomRent),
+                defaultRent: room?.roomRent ?? entry.roomRent,
+                rentEditReason: entry.rentEditReason ?? ""
+              };
+            })
+          );
+        } else if (firstAvailable) {
           setSelectedRooms([
             {
               roomId: firstAvailable.id,
@@ -96,10 +130,10 @@ export const NewRoomBookingPage = () => {
     };
 
     void loadBookingData();
-  }, [apiRequest]);
+  }, [apiRequest, editEntries]);
 
   useEffect(() => {
-    if (isManuallyLinked) {
+    if (isManuallyLinked || editBookingGroupId) {
       return;
     }
 
@@ -132,7 +166,7 @@ export const NewRoomBookingPage = () => {
       purposeOfStay: latestEntry.purposeOfStay,
       checkingOut: false
     }));
-  }, [isManuallyLinked, revenueEntries, rooms, selectedRooms]);
+  }, [editBookingGroupId, isManuallyLinked, revenueEntries, rooms, selectedRooms]);
 
   useEffect(() => {
     if (lockedGuestEntry) {
@@ -304,10 +338,10 @@ export const NewRoomBookingPage = () => {
 
     try {
       const bookingGroupId = lockedGuestEntry?.bookingGroupId;
-      await apiRequest("/api/v1/revenue", {
-        method: "POST",
+      await apiRequest(editBookingGroupId ? `/api/v1/revenue/${editBookingGroupId}` : "/api/v1/revenue", {
+        method: editBookingGroupId ? "PUT" : "POST",
         body: JSON.stringify({
-          bookingGroupId,
+          bookingGroupId: editBookingGroupId ?? bookingGroupId,
           rooms: selectedRoomPayload,
           checkInDate: form.checkInDate,
           checkInTime: form.checkInTime,
@@ -323,7 +357,11 @@ export const NewRoomBookingPage = () => {
         })
       });
 
-      navigate("/revenue");
+      if (onSaved) {
+        onSaved();
+      } else {
+        navigate("/revenue");
+      }
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Unable to save room booking.");
       setSubmitting(false); // Enable on error
@@ -338,6 +376,191 @@ export const NewRoomBookingPage = () => {
       return true;
   });
 
+  const content = (
+    <SectionCard title="Guest And Rent Details" subtitle="Occupied rooms reuse guest details; selected rooms control status changes.">
+      {loading ? (
+        <div className="centered-state centered-state--small">Loading rooms...</div>
+      ) : (
+        <form className="stack-form" onSubmit={handleSubmit}>
+          {!editBookingGroupId && !lockedGuestEntry && !hasOccupiedInSelection && linkableGuestOptions.length > 0 && (
+            <div className="field">
+              <span>Link To Existing Guest (Optional)</span>
+              <select onChange={(e) => handleLinkGuest(e.target.value)} defaultValue="">
+                <option value="">-- New Guest / Unlink --</option>
+                {linkableGuestOptions.map(({ entry, roomNumbers }) => (
+                  <option key={entry.bookingGroupId} value={entry.bookingGroupId}>
+                    Rooms {roomNumbers.join(", ")} - {entry.guestName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isManuallyLinked && lockedGuestEntry && (
+            <div className="alert alert--success booking-link-alert">
+              <span>Linked to Guest in Room {lockedGuestEntry.roomNumber} (Additional Room Booking)</span>
+              <button type="button" className="inline-text-button" onClick={handleUnlink}>
+                Unlink
+              </button>
+            </div>
+          )}
+
+          {!isManuallyLinked && lockedGuestEntry && hasOccupiedInSelection && (
+            <div className="alert alert--warning">
+              Extending stay for Room {lockedGuestEntry.roomNumber}.
+            </div>
+          )}
+
+          <div className="room-rent-selector">
+            {visibleRooms.map((room) => {
+              const selected = selectedRoomIds.has(room.id);
+              const selection = selectedRooms.find((item) => item.roomId === room.id);
+              const edited = selection ? Number(selection.roomRent) !== selection.defaultRent : false;
+              return (
+                <article key={room.id} className={`room-rent-option ${selected ? "room-rent-option--selected" : ""}`}>
+                  <label className="checkbox-field">
+                    <input type="checkbox" checked={selected} onChange={(event) => toggleRoom(room, event.target.checked)} />
+                    <span>{room.roomNumber} - {room.roomType} ({room.status})</span>
+                  </label>
+                  {selection ? (
+                    <div className="room-rent-option__fields">
+                      <label className="field">
+                        <span>Room Rent</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={selection.roomRent}
+                          onChange={(event) => updateRoomRent(room.id, { roomRent: event.target.value })}
+                        />
+                      </label>
+                      {edited ? (
+                        <label className="field">
+                          <span>Reason For Rent Edit</span>
+                          <input value={selection.rentEditReason} onChange={(event) => updateRoomRent(room.id, { rentEditReason: event.target.value })} />
+                        </label>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="rent-summary">
+            {selectedRoomDetails.map(({ room, selection }) => (
+              <div key={room.id}>
+                <span>{room.roomNumber}</span>
+                <strong>{formatCurrency(Number(selection.roomRent || 0))} x {rentDays} days</strong>
+              </div>
+            ))}
+            {selectedRoomDetails.length > 1 ? (
+              <div>
+                <span>Total Rent</span>
+                <strong>{formatCurrency(totalRent)}</strong>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="form-grid">
+            <label className="field">
+              <span>Guest Name</span>
+              <input readOnly={!!lockedGuestEntry} value={form.guestName} onChange={(event) => setForm({ ...form, guestName: event.target.value })} />
+            </label>
+            <label className="field">
+              <span>Mobile Number</span>
+              <input readOnly={!!lockedGuestEntry} value={form.mobileNumber} onChange={(event) => setForm({ ...form, mobileNumber: event.target.value })} />
+            </label>
+            <label className="field">
+              <span>Aadhar Number</span>
+              <input
+                readOnly={!!lockedGuestEntry}
+                value={form.aadharNumber}
+                inputMode="numeric"
+                maxLength={12}
+                pattern="\d{12}"
+                title="Enter exactly 12 digits"
+                onChange={(event) => setForm({ ...form, aadharNumber: normalizeAadhar(event.target.value) })}
+              />
+            </label>
+            <label className="field">
+              <span>Purpose Of Stay</span>
+              <input readOnly={!!lockedGuestEntry} value={form.purposeOfStay} onChange={(event) => setForm({ ...form, purposeOfStay: event.target.value })} />
+            </label>
+            <label className="field">
+              <span>Check-in Date</span>
+              <input readOnly={!!lockedGuestEntry} type="date" value={form.checkInDate} onChange={(event) => setForm({ ...form, checkInDate: event.target.value })} />
+            </label>
+            <label className="field">
+              <span>Check-in Time</span>
+              <input readOnly={!!lockedGuestEntry} type="time" value={form.checkInTime} onChange={(event) => setForm({ ...form, checkInTime: event.target.value })} />
+            </label>
+            {lockedGuestEntry && (
+              <label className="field">
+                <span>Continuous From Date</span>
+                <input type="date" value={form.chargeFromDate} onChange={(event) => setForm({ ...form, chargeFromDate: event.target.value })} />
+              </label>
+            )}
+            <label className="field">
+              <span>{form.checkingOut ? "Checkout Date" : "Rent Until Date"}</span>
+              <input type="date" value={form.rentUntilDate} onChange={(event) => setForm({ ...form, rentUntilDate: event.target.value })} />
+            </label>
+            {form.checkingOut && (
+              <label className="field">
+                <span>Checkout Time</span>
+                <input type="time" value={form.checkoutTime} onChange={(event) => setForm({ ...form, checkoutTime: event.target.value })} />
+              </label>
+            )}
+          </div>
+
+          <label className="field">
+            <span>Address</span>
+            <textarea readOnly={!!lockedGuestEntry} value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} rows={3} />
+          </label>
+
+          {previousLogs.length > 0 ? (
+            <div className="previous-logs">
+              <strong>Previous Revenue Logs</strong>
+              {previousLogs.map((entry) => (
+                <div key={entry.id}>
+                  <span>{entry.roomNumber} - {formatDate(entry.chargeFromDate)} to {formatDate(entry.rentUntilDate)}</span>
+                  <strong>{formatCurrency(entry.grossRevenue)}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={form.checkingOut}
+              onChange={(event) => setForm({ ...form, checkingOut: event.target.checked })}
+            />
+            <span>Checking out selected room(s)</span>
+          </label>
+
+          <div className="button-row">
+            <IonButton type="submit" disabled={submitting || rooms.length === 0 || selectedRooms.length === 0}>
+              {submitting ? "Saving..." : editBookingGroupId ? "Update Booking" : "Create Revenue"}
+            </IonButton>
+            <IonButton fill="outline" color="medium" type="button" onClick={onCancel ?? (() => navigate("/revenue"))}>
+              Cancel
+            </IonButton>
+          </div>
+        </form>
+      )}
+    </SectionCard>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {error ? <div className="alert alert--danger">{error}</div> : null}
+        {content}
+      </>
+    );
+  }
+
   return (
     <WorkspacePage
       title="New Room Booking"
@@ -349,183 +572,7 @@ export const NewRoomBookingPage = () => {
       }
       notices={error ? <div className="alert alert--danger">{error}</div> : null}
     >
-      <SectionCard title="Guest And Rent Details" subtitle="Occupied rooms reuse guest details; selected rooms control status changes.">
-        {loading ? (
-          <div className="centered-state centered-state--small">Loading rooms...</div>
-        ) : (
-          <form className="stack-form" onSubmit={handleSubmit}>
-            {!lockedGuestEntry && !hasOccupiedInSelection && linkableGuestOptions.length > 0 && (
-              <div className="field">
-                <span>Link To Existing Guest (Optional)</span>
-                <select onChange={(e) => handleLinkGuest(e.target.value)} defaultValue="">
-                  <option value="">-- New Guest / Unlink --</option>
-                  {linkableGuestOptions.map(({ entry, roomNumbers }) => (
-                    <option key={entry.bookingGroupId} value={entry.bookingGroupId}>
-                      Rooms {roomNumbers.join(", ")} - {entry.guestName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {isManuallyLinked && lockedGuestEntry && (
-              <div className="alert alert--success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Linked to Guest in Room {lockedGuestEntry.roomNumber} (Additional Room Booking)</span>
-                <button 
-                  type="button" 
-                  style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 'bold' }}
-                  onClick={handleUnlink}
-                >
-                  Unlink
-                </button>
-              </div>
-            )}
-
-            {!isManuallyLinked && lockedGuestEntry && hasOccupiedInSelection && (
-              <div className="alert alert--warning">
-                Extending stay for Room {lockedGuestEntry.roomNumber}.
-              </div>
-            )}
-
-            <div className="room-rent-selector">
-              {visibleRooms.map((room) => {
-                const selected = selectedRoomIds.has(room.id);
-                const selection = selectedRooms.find((item) => item.roomId === room.id);
-                const edited = selection ? Number(selection.roomRent) !== selection.defaultRent : false;
-                return (
-                  <article key={room.id} className={`room-rent-option ${selected ? "room-rent-option--selected" : ""}`}>
-                    <label className="checkbox-field">
-                      <input type="checkbox" checked={selected} onChange={(event) => toggleRoom(room, event.target.checked)} />
-                      <span>{room.roomNumber} - {room.roomType} ({room.status})</span>
-                    </label>
-                    {selection ? (
-                      <div className="room-rent-option__fields">
-                        <label className="field">
-                          <span>Room Rent</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={selection.roomRent}
-                            onChange={(event) => updateRoomRent(room.id, { roomRent: event.target.value })}
-                          />
-                        </label>
-                        {edited ? (
-                          <label className="field">
-                            <span>Reason For Rent Edit</span>
-                            <input value={selection.rentEditReason} onChange={(event) => updateRoomRent(room.id, { rentEditReason: event.target.value })} />
-                          </label>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </article>
-                );
-              })}
-            </div>
-
-            <div className="rent-summary">
-              {selectedRoomDetails.map(({ room, selection }) => (
-                <div key={room.id}>
-                  <span>{room.roomNumber}</span>
-                  <strong>{formatCurrency(Number(selection.roomRent || 0))} x {rentDays} days</strong>
-                </div>
-              ))}
-              {selectedRoomDetails.length > 1 ? (
-                <div>
-                  <span>Total Rent</span>
-                  <strong>{formatCurrency(totalRent)}</strong>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="form-grid">
-              <label className="field">
-                <span>Guest Name</span>
-                <input readOnly={!!lockedGuestEntry} value={form.guestName} onChange={(event) => setForm({ ...form, guestName: event.target.value })} />
-              </label>
-              <label className="field">
-                <span>Mobile Number</span>
-                <input readOnly={!!lockedGuestEntry} value={form.mobileNumber} onChange={(event) => setForm({ ...form, mobileNumber: event.target.value })} />
-              </label>
-              <label className="field">
-                <span>Aadhar Number</span>
-                <input
-                  readOnly={!!lockedGuestEntry}
-                  value={form.aadharNumber}
-                  inputMode="numeric"
-                  maxLength={12}
-                  pattern="\d{12}"
-                  title="Enter exactly 12 digits"
-                  onChange={(event) => setForm({ ...form, aadharNumber: normalizeAadhar(event.target.value) })}
-                />
-              </label>
-              <label className="field">
-                <span>Purpose Of Stay</span>
-                <input readOnly={!!lockedGuestEntry} value={form.purposeOfStay} onChange={(event) => setForm({ ...form, purposeOfStay: event.target.value })} />
-              </label>
-              <label className="field">
-                <span>Check-in Date</span>
-                <input readOnly={!!lockedGuestEntry} type="date" value={form.checkInDate} onChange={(event) => setForm({ ...form, checkInDate: event.target.value })} />
-              </label>
-              <label className="field">
-                <span>Check-in Time</span>
-                <input readOnly={!!lockedGuestEntry} type="time" value={form.checkInTime} onChange={(event) => setForm({ ...form, checkInTime: event.target.value })} />
-              </label>
-              {lockedGuestEntry && (
-                <label className="field">
-                  <span>Continuous From Date</span>
-                  <input type="date" value={form.chargeFromDate} onChange={(event) => setForm({ ...form, chargeFromDate: event.target.value })} />
-                </label>
-              )}
-              <label className="field">
-                <span>{form.checkingOut ? "Checkout Date" : "Rent Until Date"}</span>
-                <input type="date" value={form.rentUntilDate} onChange={(event) => setForm({ ...form, rentUntilDate: event.target.value })} />
-              </label>
-              {form.checkingOut && (
-                <label className="field">
-                  <span>Checkout Time</span>
-                  <input type="time" value={form.checkoutTime} onChange={(event) => setForm({ ...form, checkoutTime: event.target.value })} />
-                </label>
-              )}
-            </div>
-
-            <label className="field">
-              <span>Address</span>
-              <textarea readOnly={!!lockedGuestEntry} value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} rows={3} />
-            </label>
-
-            {previousLogs.length > 0 ? (
-              <div className="previous-logs">
-                <strong>Previous Revenue Logs</strong>
-                {previousLogs.map((entry) => (
-                  <div key={entry.id}>
-                    <span>{entry.roomNumber} - {formatDate(entry.chargeFromDate)} to {formatDate(entry.rentUntilDate)}</span>
-                    <strong>{formatCurrency(entry.grossRevenue)}</strong>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            <label className="checkbox-field">
-              <input
-                type="checkbox"
-                checked={form.checkingOut}
-                onChange={(event) => setForm({ ...form, checkingOut: event.target.checked })}
-              />
-              <span>Checking out selected room(s)</span>
-            </label>
-
-            <div className="button-row">
-              <IonButton type="submit" disabled={submitting || rooms.length === 0 || selectedRooms.length === 0}>
-                {submitting ? "Saving..." : "Create Revenue"}
-              </IonButton>
-              <IonButton fill="outline" color="medium" type="button" onClick={() => navigate("/revenue")}>
-                Cancel
-              </IonButton>
-            </div>
-          </form>
-        )}
-      </SectionCard>
+      {content}
     </WorkspacePage>
   );
 };

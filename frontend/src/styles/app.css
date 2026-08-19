@@ -659,6 +659,23 @@ small {
   gap: 1rem;
 }
 
+.booking-link-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inline-text-button {
+  min-width: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 800;
+}
+
 .field input,
 .field select,
 .field textarea,
@@ -881,6 +898,93 @@ small {
 .confirm-dialog__backdrop:disabled {
   cursor: default;
   opacity: 0.72;
+}
+
+.modal-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.modal-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(12, 27, 32, 0.5);
+  backdrop-filter: blur(5px);
+}
+
+.modal-dialog__panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(96vw, 42rem);
+  max-height: min(92vh, 52rem);
+  overflow: hidden;
+  border: 1px solid var(--color-line, rgba(15, 61, 62, 0.12));
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 28px 80px rgba(18, 45, 52, 0.24);
+}
+
+.modal-dialog__panel--wide {
+  width: min(98vw, 68rem);
+}
+
+.modal-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-line, rgba(15, 61, 62, 0.12));
+  background: rgba(248, 251, 251, 0.94);
+}
+
+.modal-dialog__header h2 {
+  margin: 0;
+  color: var(--color-ink, #17262b);
+  font-family: "Sora", "Segoe UI", sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.modal-dialog__body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.modal-dialog__body .section-card {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .modal-dialog {
+    padding: 0.5rem;
+  }
+
+  .modal-dialog__panel,
+  .modal-dialog__panel--wide {
+    width: 100%;
+    max-height: 94vh;
+  }
+
+  .modal-dialog__body {
+    padding: 0.8rem;
+  }
 }
 
 .table-shell {
@@ -2252,12 +2356,14 @@ button,
 
 /* Rooms table actions */
 .rooms-page .table-actions,
-.revenue-page .table-actions {
+.revenue-page .table-actions,
+.expenses-page .table-actions {
   align-items: center;
 }
 
 .rooms-page .table-action-button,
-.revenue-page .table-action-button {
+.revenue-page .table-action-button,
+.expenses-page .table-action-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2274,13 +2380,15 @@ button,
 }
 
 .rooms-page .table-action-button ion-icon,
-.revenue-page .table-action-button ion-icon {
+.revenue-page .table-action-button ion-icon,
+.expenses-page .table-action-button ion-icon {
   flex: 0 0 auto;
   font-size: 1rem;
 }
 
 .rooms-page .table-action-button--danger,
-.revenue-page .table-action-button--danger {
+.revenue-page .table-action-button--danger,
+.expenses-page .table-action-button--danger {
   border-color: rgba(160, 51, 51, 0.18);
   background: rgba(160, 51, 51, 0.07);
   color: #922f2f;
@@ -2288,7 +2396,8 @@ button,
 
 @media (max-width: 860px) {
   .rooms-page .table-shell tbody td.table-actions,
-  .revenue-page .table-shell tbody td.table-actions {
+  .revenue-page .table-shell tbody td.table-actions,
+  .expenses-page .table-shell tbody td.table-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
@@ -2298,12 +2407,14 @@ button,
   }
 
   .rooms-page .table-shell tbody td.table-actions::before,
-  .revenue-page .table-shell tbody td.table-actions::before {
+  .revenue-page .table-shell tbody td.table-actions::before,
+  .expenses-page .table-shell tbody td.table-actions::before {
     display: none;
   }
 
   .rooms-page .table-action-button,
-  .revenue-page .table-action-button {
+  .revenue-page .table-action-button,
+  .expenses-page .table-action-button {
     width: 100%;
     min-height: 44px;
     padding: 0.65rem 0.75rem;
@@ -2313,7 +2424,416 @@ button,
 
 @media (max-width: 380px) {
   .rooms-page .table-shell tbody td.table-actions,
-  .revenue-page .table-shell tbody td.table-actions {
+  .revenue-page .table-shell tbody td.table-actions,
+  .expenses-page .table-shell tbody td.table-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Cool calm theme */
+:root {
+  --color-ink: #17262b;
+  --color-muted: #64777d;
+  --color-soft: #edf5f5;
+  --color-page: #f4f8f8;
+  --color-panel: rgba(255, 255, 255, 0.9);
+  --color-panel-solid: #ffffff;
+  --color-line: rgba(44, 93, 101, 0.13);
+  --color-primary: #176b73;
+  --color-primary-dark: #0f424a;
+  --color-primary-soft: rgba(23, 107, 115, 0.1);
+  --color-sage: #7aa6a1;
+  --color-ice: #dfeeee;
+  --color-accent: #d7a94b;
+  --shadow-soft: 0 14px 36px rgba(29, 59, 67, 0.08);
+  --shadow-subtle: 0 8px 22px rgba(29, 59, 67, 0.06);
+  --radius-panel: 8px;
+}
+
+body {
+  color: var(--color-ink);
+  background:
+    linear-gradient(135deg, rgba(223, 238, 238, 0.78) 0%, rgba(244, 248, 248, 0) 42%),
+    linear-gradient(180deg, #f8fbfb 0%, var(--color-page) 52%, #eef5f4 100%);
+}
+
+select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(23,107,115,0.72)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.app-sidebar {
+  background:
+    linear-gradient(180deg, rgba(13, 54, 62, 0.98) 0%, rgba(18, 76, 84, 0.96) 58%, rgba(22, 107, 115, 0.94) 100%),
+    #0d363e;
+  color: #f6fbfb;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.brand-lockup__mark,
+.login-brand__mark {
+  border-radius: var(--radius-panel);
+  background: linear-gradient(135deg, #eaf5f4, #9fc8c4);
+  color: #0f424a;
+  box-shadow: 0 12px 28px rgba(11, 47, 54, 0.18);
+}
+
+.app-nav__item,
+.mobile-tabbar__item {
+  border-radius: var(--radius-panel);
+}
+
+.app-nav__item {
+  color: rgba(246, 251, 251, 0.78);
+}
+
+.app-nav__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.app-nav__item--active {
+  color: #0f424a;
+  background: linear-gradient(135deg, #f4fbfb, #cfe5e4);
+  box-shadow: 0 14px 30px rgba(5, 28, 34, 0.18);
+}
+
+.sidebar-footer {
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: var(--radius-panel);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.topbar {
+  color: var(--color-ink);
+}
+
+.topbar__identity small,
+.section-card__header p,
+.field span,
+small,
+.table-shell tbody td::before {
+  color: var(--color-muted);
+}
+
+.page-body {
+  background:
+    linear-gradient(90deg, rgba(23, 107, 115, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(23, 107, 115, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.workspace-page__header {
+  background: linear-gradient(180deg, rgba(244, 248, 248, 0.96) 0%, rgba(244, 248, 248, 0.88) 76%, rgba(244, 248, 248, 0) 100%);
+}
+
+.page-header h1,
+.section-card__header h3,
+.confirm-dialog__body h2,
+.login-brand h2 {
+  color: var(--color-ink);
+  letter-spacing: 0;
+}
+
+.page-header p,
+.confirm-dialog__body p,
+.login-brand p {
+  color: var(--color-muted);
+}
+
+.metric-card,
+.section-card,
+.login-card,
+.centered-state--panel {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.metric-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 251, 251, 0.88)),
+    var(--color-panel-solid);
+}
+
+.metric-card__header {
+  color: var(--color-muted);
+}
+
+.metric-card--success {
+  background: linear-gradient(180deg, rgba(36, 128, 111, 0.12), rgba(255, 255, 255, 0.92));
+}
+
+.metric-card--warning {
+  background: linear-gradient(180deg, rgba(215, 169, 75, 0.15), rgba(255, 255, 255, 0.92));
+}
+
+.insight-row,
+.rent-summary,
+.previous-logs,
+.room-rent-option,
+.checkbox-field {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: rgba(247, 251, 251, 0.86);
+}
+
+.room-rent-option--selected {
+  border-color: rgba(23, 107, 115, 0.36);
+  background: rgba(23, 107, 115, 0.08);
+}
+
+.field input,
+.field select,
+.field textarea,
+.date-filter input {
+  border-color: var(--color-line);
+  border-radius: var(--radius-panel);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--color-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+}
+
+.field input[readonly],
+.field textarea[readonly] {
+  color: var(--color-muted);
+  background: rgba(237, 245, 245, 0.72);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.date-filter input:focus {
+  border-color: rgba(23, 107, 115, 0.55);
+  box-shadow: 0 0 0 4px rgba(23, 107, 115, 0.1);
+}
+
+.checkbox-field input {
+  accent-color: var(--color-primary);
+}
+
+.password-input__toggle {
+  border-radius: 6px;
+  color: var(--color-muted);
+}
+
+.password-input__toggle:hover,
+.password-input__toggle:focus-visible {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+ion-button {
+  --border-radius: 8px;
+  --box-shadow: 0 10px 22px rgba(23, 107, 115, 0.16);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+ion-button[color="dark"] {
+  --color: var(--color-primary-dark);
+  --border-color: rgba(23, 107, 115, 0.24);
+  --background-hover: rgba(23, 107, 115, 0.08);
+}
+
+.button-row button,
+.confirm-dialog__button,
+.rooms-page .table-action-button,
+.revenue-page .table-action-button,
+.expenses-page .table-action-button {
+  border-radius: var(--radius-panel);
+}
+
+.confirm-dialog__backdrop {
+  background: rgba(12, 27, 32, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.confirm-dialog__panel {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(18, 45, 52, 0.22);
+}
+
+.confirm-dialog__button {
+  border-color: var(--color-line);
+  background: rgba(247, 251, 251, 0.92);
+  color: var(--color-primary-dark);
+}
+
+.confirm-dialog__button--danger {
+  border-color: rgba(170, 64, 64, 0.22);
+  background: #a94343;
+  color: #ffffff;
+}
+
+.table-shell {
+  border-color: var(--color-line);
+  border-radius: var(--radius-panel);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-subtle);
+}
+
+thead th {
+  color: var(--color-muted);
+}
+
+tbody td {
+  border-top-color: var(--color-line);
+}
+
+.table-actions button,
+.rooms-page .table-action-button,
+.revenue-page .table-action-button,
+.expenses-page .table-action-button {
+  color: var(--color-primary);
+}
+
+.rooms-page .table-action-button,
+.revenue-page .table-action-button,
+.expenses-page .table-action-button {
+  border-color: rgba(23, 107, 115, 0.18);
+  background: rgba(23, 107, 115, 0.07);
+}
+
+.danger-link,
+.rooms-page .table-action-button--danger,
+.revenue-page .table-action-button--danger,
+.expenses-page .table-action-button--danger {
+  color: #9b3939;
+}
+
+.rooms-page .table-action-button--danger,
+.revenue-page .table-action-button--danger,
+.expenses-page .table-action-button--danger {
+  border-color: rgba(155, 57, 57, 0.2);
+  background: rgba(155, 57, 57, 0.07);
+}
+
+.status-pill {
+  border-radius: 999px;
+}
+
+.status-pill--available {
+  background: rgba(36, 128, 111, 0.13);
+  color: #176453;
+}
+
+.status-pill--occupied {
+  background: rgba(215, 169, 75, 0.18);
+  color: #7a5a14;
+}
+
+.status-pill--cleaning,
+.status-pill--maintenance,
+.status-pill--blocked {
+  background: rgba(91, 121, 132, 0.14);
+  color: #3d5d66;
+}
+
+.alert {
+  border-radius: var(--radius-panel);
+}
+
+.alert--danger {
+  background: rgba(169, 67, 67, 0.1);
+  color: #8c3333;
+}
+
+.alert--success {
+  background: rgba(36, 128, 111, 0.11);
+  color: #176453;
+}
+
+.login-layout {
+  background:
+    linear-gradient(145deg, rgba(223, 238, 238, 0.86) 0%, rgba(248, 251, 251, 0.96) 44%, rgba(237, 245, 245, 0.98) 100%);
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.login-illustration {
+  border-color: var(--color-line);
+  border-radius: var(--radius-panel);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(232, 243, 243, 0.9)),
+    linear-gradient(135deg, rgba(23, 107, 115, 0.14), rgba(122, 166, 161, 0.2));
+}
+
+.login-illustration::before {
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 42%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  background: linear-gradient(180deg, rgba(23, 107, 115, 0.02), rgba(23, 107, 115, 0.12));
+}
+
+.login-illustration__sun {
+  border-radius: 8px;
+  background: #d7a94b;
+  box-shadow: 0 12px 28px rgba(125, 95, 29, 0.18);
+}
+
+.login-illustration__building {
+  border-radius: 8px 8px 4px 4px;
+  background: #176b73;
+  box-shadow: 0 20px 34px rgba(23, 107, 115, 0.2);
+}
+
+.login-illustration__building::before {
+  background: #2f7a81;
+}
+
+.login-illustration__building span {
+  background: rgba(239, 249, 248, 0.72);
+}
+
+.login-illustration__base {
+  background: rgba(23, 107, 115, 0.14);
+}
+
+.login-brand__mark {
+  background: linear-gradient(135deg, #176b73, #7aa6a1);
+  color: #ffffff;
+}
+
+.mobile-tabbar {
+  background: rgba(248, 251, 251, 0.94);
+  border-top-color: var(--color-line);
+  box-shadow: 0 -12px 30px rgba(29, 59, 67, 0.09);
+}
+
+.mobile-tabbar__item {
+  color: var(--color-muted);
+}
+
+.mobile-tabbar__item--active {
+  background: rgba(23, 107, 115, 0.12);
+  color: var(--color-primary);
+  box-shadow: none;
+}
+
+.mobile-tabbar__item:hover {
+  background: rgba(23, 107, 115, 0.08);
+}
+
+@media (max-width: 860px) {
+  .table-shell tbody tr {
+    border-color: var(--color-line);
+    border-radius: var(--radius-panel);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--shadow-subtle);
+  }
+
+  .rooms-page .table-shell tbody td.table-actions,
+  .revenue-page .table-shell tbody td.table-actions,
+  .expenses-page .table-shell tbody td.table-actions {
+    border-top-color: var(--color-line);
   }
 }

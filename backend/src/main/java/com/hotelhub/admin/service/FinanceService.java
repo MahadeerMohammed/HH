@@ -181,20 +181,32 @@ public class FinanceService {
 
     @Transactional
     public ExpenseResponse createExpense(ExpenseRequest request) {
+        Expense expense = new Expense();
+        applyExpenseRequest(expense, request);
+        return toExpenseResponse(expenseRepository.save(expense));
+    }
+
+    @Transactional
+    public ExpenseResponse updateExpense(UUID expenseId, ExpenseRequest request) {
+        Expense expense = expenseRepository.findById(expenseId)
+            .orElseThrow(() -> new ResourceNotFoundException("Expense not found."));
+
+        applyExpenseRequest(expense, request);
+        return toExpenseResponse(expenseRepository.save(expense));
+    }
+
+    private void applyExpenseRequest(Expense expense, ExpenseRequest request) {
         Room room = request.roomId() == null
             ? null
             : roomRepository.findByIdAndActiveTrue(request.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found."));
 
-        Expense expense = new Expense();
         expense.setRoom(room);
         expense.setExpenseDate(request.expenseDate());
         expense.setCategory(request.category());
         expense.setVendorName(request.vendorName().trim());
         expense.setAmount(request.amount());
         expense.setNotes(request.notes() == null ? null : request.notes().trim());
-
-        return toExpenseResponse(expenseRepository.save(expense));
     }
 
     @Transactional(readOnly = true)

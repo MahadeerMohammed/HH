@@ -1,17 +1,20 @@
 import { IonButton, IonIcon } from "@ionic/react";
-import { addOutline } from "ionicons/icons";
+import { addOutline, createOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { ExpenseForm } from "../components/ExpenseForm";
+import { ModalDialog } from "../components/ModalDialog";
 import { SectionCard } from "../components/SectionCard";
 import { WorkspacePage } from "../components/WorkspacePage";
 import { useAuth } from "../contexts/AuthContext";
 import { formatCurrency, formatDate } from "../lib/formatters";
-import type { ExpenseEntry } from "../types";
+import type { ExpenseCategory, ExpenseEntry, Room } from "../types";
 
 export const ExpensesPage = () => {
-  const navigate = useNavigate();
   const { apiRequest } = useAuth();
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [expenseDialogMode, setExpenseDialogMode] = useState<"create" | "edit" | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,13 +35,70 @@ export const ExpensesPage = () => {
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [apiRequest]);
+
+  useEffect(() => {
+    const loadRooms = async () => {
+      try {
+        const payload = await apiRequest<Room[]>("/api/v1/rooms");
+        setRooms(payload);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : "Unable to load rooms.");
+      }
+    };
+
+    void loadRooms();
+  }, [apiRequest]);
+
+  const startEditing = (expense: ExpenseEntry) => {
+    setSelectedExpense(expense);
+    setExpenseDialogMode("edit");
+    setError(null);
+    setSuccess(null);
+  };
+
+  const closeExpenseDialog = () => {
+    setExpenseDialogMode(null);
+    setSelectedExpense(null);
+  };
+
+  const handleSaveExpense = async (payload: {
+    roomId: string | null;
+    expenseDate: string;
+    category: ExpenseCategory;
+    vendorName: string;
+    amount: number;
+    notes: string;
+  }) => {
+    setError(null);
+    setSuccess(null);
+
+    if (expenseDialogMode === "edit" && selectedExpense) {
+      const updatedExpense = await apiRequest<ExpenseEntry>(`/api/v1/expenses/${selectedExpense.id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload)
+      });
+      setExpenses((currentExpenses) =>
+        currentExpenses.map((expense) => (expense.id === updatedExpense.id ? updatedExpense : expense))
+      );
+      setSuccess("Expense updated.");
+    } else {
+      await apiRequest("/api/v1/expenses", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      setSuccess("Expense created.");
+      await loadData();
+    }
+    closeExpenseDialog();
+  };
 
   return (
     <WorkspacePage
         title="Expenses"
+        className="expenses-page"
         actions={
-          <IonButton onClick={() => navigate("/expenses/new")}>
+          <IonButton onClick={() => setExpenseDialogMode("create")}>
             <IonIcon icon={addOutline} slot="start" />
             Add Expense
           </IonButton>
@@ -50,7 +110,6 @@ export const ExpensesPage = () => {
           </>
         ) : null}
     >
-
       <SectionCard>
         {loading ? (
           <div className="centered-state centered-state--small">Loading expenses...</div>
@@ -64,6 +123,7 @@ export const ExpensesPage = () => {
                   <th>Vendor</th>
                   <th>Room</th>
                   <th>Amount</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -74,6 +134,12 @@ export const ExpensesPage = () => {
                     <td data-label="Vendor">{expense.vendorName}</td>
                     <td data-label="Room">{expense.roomNumber ?? "Property"}</td>
                     <td data-label="Amount">{formatCurrency(expense.amount)}</td>
+                    <td data-label="Actions" className="table-actions">
+                      <button type="button" className="table-action-button" onClick={() => startEditing(expense)}>
+                        <IonIcon icon={createOutline} aria-hidden="true" />
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -81,6 +147,19 @@ export const ExpensesPage = () => {
           </div>
         )}
       </SectionCard>
+      <ModalDialog
+        isOpen={!!expenseDialogMode}
+        title={expenseDialogMode === "edit" ? "Edit Expense" : "Create Expense"}
+        onClose={closeExpenseDialog}
+      >
+        <ExpenseForm
+          key={selectedExpense?.id ?? "new-expense"}
+          expense={selectedExpense}
+          rooms={rooms}
+          onSubmit={handleSaveExpense}
+          onCancel={closeExpenseDialog}
+        />
+      </ModalDialog>
     </WorkspacePage>
   );
 };

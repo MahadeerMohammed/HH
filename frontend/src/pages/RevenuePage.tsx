@@ -1,12 +1,13 @@
 import { IonButton, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from "@ionic/react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { MetricCard } from "../components/MetricCard";
+import { ModalDialog } from "../components/ModalDialog";
 import { SectionCard } from "../components/SectionCard";
 import { WorkspacePage } from "../components/WorkspacePage";
 import { useAuth } from "../contexts/AuthContext";
 import { formatCurrency, formatDate } from "../lib/formatters";
+import { NewRoomBookingPage } from "./NewRoomBookingPage";
 import type { RevenueEntry } from "../types";
 
 interface ConsolidatedBooking {
@@ -22,10 +23,11 @@ interface ConsolidatedBooking {
 }
 
 export const RevenuePage = () => {
-  const navigate = useNavigate();
   const { apiRequest } = useAuth();
   const [entries, setEntries] = useState<RevenueEntry[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<ConsolidatedBooking | null>(null);
+  const [bookingDialogMode, setBookingDialogMode] = useState<"create" | "edit" | null>(null);
+  const [editingBooking, setEditingBooking] = useState<ConsolidatedBooking | null>(null);
   const [deleteBookingId, setDeleteBookingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +68,16 @@ export const RevenuePage = () => {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const closeBookingDialog = () => {
+    setBookingDialogMode(null);
+    setEditingBooking(null);
+  };
+
+  const handleBookingSaved = async () => {
+    closeBookingDialog();
+    await loadData();
   };
 
   const consolidatedBookings = entries.reduce<ConsolidatedBooking[]>((acc, entry) => {
@@ -110,7 +122,7 @@ export const RevenuePage = () => {
       title="Revenue"
       className="revenue-page"
       actions={
-        <IonButton onClick={() => navigate("/bookings/new")}>
+        <IonButton onClick={() => setBookingDialogMode("create")}>
           New Room Booking
         </IonButton>
       }
@@ -162,6 +174,16 @@ export const RevenuePage = () => {
                       </button>
                       <button
                         type="button"
+                        className="table-action-button"
+                        onClick={() => {
+                          setEditingBooking(booking);
+                          setBookingDialogMode("edit");
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
                         className="table-action-button table-action-button--danger"
                         onClick={() => setDeleteBookingId(booking.bookingGroupId)}
                       >
@@ -175,6 +197,21 @@ export const RevenuePage = () => {
           </div>
         )}
       </SectionCard>
+
+      <ModalDialog
+        isOpen={!!bookingDialogMode}
+        title={bookingDialogMode === "edit" ? "Edit Booking" : "Create Booking"}
+        onClose={closeBookingDialog}
+        size="wide"
+      >
+        <NewRoomBookingPage
+          key={bookingDialogMode === "edit" ? editingBooking?.bookingGroupId : "new-booking"}
+          embedded
+          editEntries={bookingDialogMode === "edit" ? editingBooking?.entries ?? [] : null}
+          onSaved={() => void handleBookingSaved()}
+          onCancel={closeBookingDialog}
+        />
+      </ModalDialog>
 
       <IonModal isOpen={!!selectedBooking} onDidDismiss={() => setSelectedBooking(null)}>
         <IonHeader>
