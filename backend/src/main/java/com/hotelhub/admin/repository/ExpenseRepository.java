@@ -18,6 +18,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     @EntityGraph(attributePaths = "room")
     List<Expense> findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(LocalDate from, LocalDate to);
 
+    boolean existsByImportId(UUID importId);
+
     @Query("select coalesce(sum(e.amount), 0) from Expense e where e.expenseDate between :from and :to")
     BigDecimal sumAmountBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 }

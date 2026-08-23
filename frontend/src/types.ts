@@ -14,6 +14,7 @@ export interface AuthResponse {
 
 export interface Room {
   id: string;
+  importId: string;
   roomNumber: string;
   roomType: string;
   floorNumber: number;
@@ -29,6 +30,7 @@ export type RoomStatus = "AVAILABLE" | "OCCUPIED";
 
 export interface RevenueEntry {
   id: string;
+  importId: string;
   bookingGroupId: string;
   roomId: string;
   roomNumber: string;
@@ -53,6 +55,7 @@ export interface RevenueEntry {
 
 export interface ExpenseEntry {
   id: string;
+  importId: string;
   roomId: string | null;
   roomNumber: string | null;
   expenseDate: string;
@@ -119,6 +122,26 @@ export interface ApiError {
   error: string;
   message: string;
   details: string[];
+}
+
+export interface ImportError {
+  rowNumber: number;
+  field: string;
+  message: string;
+}
+
+export interface ImportPreviewRow {
+  rowNumber: number;
+  values: Record<string, string>;
+}
+
+export interface ImportResult {
+  section: string;
+  totalRows: number;
+  validRows: number;
+  importedRows: number;
+  errors: ImportError[];
+  previewRows: ImportPreviewRow[];
 }
 
 export const ROOM_STATUS_OPTIONS: RoomStatus[] = [

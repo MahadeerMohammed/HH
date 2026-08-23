@@ -12,6 +12,7 @@ import com.hotelhub.admin.dto.finance.ReportResponse;
 import com.hotelhub.admin.dto.finance.RevenueEntryRequest;
 import com.hotelhub.admin.dto.finance.RevenueEntryResponse;
 import com.hotelhub.admin.dto.finance.RoomPerformanceResponse;
+import com.hotelhub.admin.dto.imports.ImportResultResponse;
 import com.hotelhub.admin.exception.BadRequestException;
 import com.hotelhub.admin.exception.ResourceNotFoundException;
 import com.hotelhub.admin.repository.ExpenseRepository;
@@ -19,6 +20,7 @@ import com.hotelhub.admin.repository.RevenueEntryRepository;
 import com.hotelhub.admin.repository.RoomRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.YearMonth;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -44,17 +47,23 @@ public class FinanceService {
     private final RevenueEntryRepository revenueEntryRepository;
     private final ExpenseRepository expenseRepository;
     private final RoomRepository roomRepository;
+    private final ExcelTransferService excelTransferService;
 
     @Transactional(readOnly = true)
     public List<RevenueEntryResponse> listRevenueEntries(LocalDate fromDate, LocalDate toDate) {
-        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
-        List<RevenueEntry> entries = dateRange == null
-            ? revenueEntryRepository.findAllByOrderByCheckInDateDescCreatedAtDesc()
-            : revenueEntryRepository.findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
-
-        return entries.stream()
+        return listRevenueEntities(fromDate, toDate).stream()
             .map(this::toRevenueResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportRevenue(LocalDate fromDate, LocalDate toDate) {
+        return excelTransferService.exportRevenue(listRevenueEntities(fromDate, toDate));
+    }
+
+    @Transactional
+    public ImportResultResponse importRevenue(MultipartFile file, boolean commit) throws IOException {
+        return excelTransferService.importRevenue(file, commit);
     }
 
     @Transactional
@@ -169,14 +178,19 @@ public class FinanceService {
 
     @Transactional(readOnly = true)
     public List<ExpenseResponse> listExpenses(LocalDate fromDate, LocalDate toDate) {
-        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
-        List<Expense> expenses = dateRange == null
-            ? expenseRepository.findAllByOrderByExpenseDateDescCreatedAtDesc()
-            : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
-
-        return expenses.stream()
+        return listExpenseEntities(fromDate, toDate).stream()
             .map(this::toExpenseResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportExpenses(LocalDate fromDate, LocalDate toDate) {
+        return excelTransferService.exportExpenses(listExpenseEntities(fromDate, toDate));
+    }
+
+    @Transactional
+    public ImportResultResponse importExpenses(MultipartFile file, boolean commit) throws IOException {
+        return excelTransferService.importExpenses(file, commit);
     }
 
     @Transactional
@@ -350,6 +364,7 @@ public class FinanceService {
     private RevenueEntryResponse toRevenueResponse(RevenueEntry entry) {
         return new RevenueEntryResponse(
             entry.getId(),
+            entry.getImportId(),
             entry.getBookingGroupId(),
             entry.getRoom().getId(),
             entry.getRoom().getRoomNumber(),
@@ -376,6 +391,7 @@ public class FinanceService {
     private ExpenseResponse toExpenseResponse(Expense expense) {
         return new ExpenseResponse(
             expense.getId(),
+            expense.getImportId(),
             expense.getRoom() == null ? null : expense.getRoom().getId(),
             expense.getRoom() == null ? null : expense.getRoom().getRoomNumber(),
             expense.getExpenseDate(),
@@ -406,6 +422,20 @@ public class FinanceService {
             return null;
         }
         return resolveRange(fromDate, toDate);
+    }
+
+    private List<RevenueEntry> listRevenueEntities(LocalDate fromDate, LocalDate toDate) {
+        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
+        return dateRange == null
+            ? revenueEntryRepository.findAllByOrderByCheckInDateDescCreatedAtDesc()
+            : revenueEntryRepository.findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
+    }
+
+    private List<Expense> listExpenseEntities(LocalDate fromDate, LocalDate toDate) {
+        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
+        return dateRange == null
+            ? expenseRepository.findAllByOrderByExpenseDateDescCreatedAtDesc()
+            : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
     }
 
     private BigDecimal normalize(BigDecimal value) {

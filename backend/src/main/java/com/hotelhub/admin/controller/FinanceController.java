@@ -5,14 +5,19 @@ import com.hotelhub.admin.dto.finance.ExpenseRequest;
 import com.hotelhub.admin.dto.finance.ExpenseResponse;
 import com.hotelhub.admin.dto.finance.RevenueEntryRequest;
 import com.hotelhub.admin.dto.finance.RevenueEntryResponse;
+import com.hotelhub.admin.dto.imports.ImportResultResponse;
 import com.hotelhub.admin.service.FinanceService;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -45,6 +51,22 @@ public class FinanceController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
     ) {
         return financeService.listRevenueEntries(fromDate, toDate);
+    }
+
+    @GetMapping("/revenue/export")
+    public ResponseEntity<byte[]> exportRevenue(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        return excelResponse("revenue.xlsx", financeService.exportRevenue(fromDate, toDate));
+    }
+
+    @PostMapping(value = "/revenue/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultResponse importRevenue(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam(defaultValue = "false") boolean commit
+    ) throws IOException {
+        return financeService.importRevenue(file, commit);
     }
 
     @PostMapping("/revenue")
@@ -72,6 +94,22 @@ public class FinanceController {
         return financeService.listExpenses(fromDate, toDate);
     }
 
+    @GetMapping("/expenses/export")
+    public ResponseEntity<byte[]> exportExpenses(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        return excelResponse("expenses.xlsx", financeService.exportExpenses(fromDate, toDate));
+    }
+
+    @PostMapping(value = "/expenses/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportResultResponse importExpenses(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam(defaultValue = "false") boolean commit
+    ) throws IOException {
+        return financeService.importExpenses(file, commit);
+    }
+
     @PostMapping("/expenses")
     @ResponseStatus(HttpStatus.CREATED)
     public ExpenseResponse createExpense(@Valid @RequestBody ExpenseRequest request) {
@@ -81,5 +119,12 @@ public class FinanceController {
     @PutMapping("/expenses/{expenseId}")
     public ExpenseResponse updateExpense(@PathVariable UUID expenseId, @Valid @RequestBody ExpenseRequest request) {
         return financeService.updateExpense(expenseId, request);
+    }
+
+    private ResponseEntity<byte[]> excelResponse(String filename, byte[] body) {
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+            .body(body);
     }
 }

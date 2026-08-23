@@ -1,6 +1,7 @@
 import { IonButton, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from "@ionic/react";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ExcelTransferPanel } from "../components/ExcelTransferPanel";
 import { MetricCard } from "../components/MetricCard";
 import { ModalDialog } from "../components/ModalDialog";
 import { SectionCard } from "../components/SectionCard";
@@ -31,6 +32,7 @@ export const RevenuePage = () => {
   const [deleteBookingId, setDeleteBookingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -122,11 +124,27 @@ export const RevenuePage = () => {
       title="Revenue"
       className="revenue-page"
       actions={
-        <IonButton onClick={() => setBookingDialogMode("create")}>
-          New Room Booking
-        </IonButton>
+        <>
+          <ExcelTransferPanel
+            title="Revenue"
+            exportPath="/api/v1/revenue/export"
+            importPath="/api/v1/revenue/import"
+            filenamePrefix="revenue"
+            onImported={loadData}
+            onError={setError}
+            onSuccess={setSuccess}
+          />
+          <IonButton onClick={() => setBookingDialogMode("create")}>
+            New Room Booking
+          </IonButton>
+        </>
       }
-      notices={error ? <div className="alert alert--danger">{error}</div> : null}
+      notices={error || success ? (
+        <>
+          {error ? <div className="alert alert--danger">{error}</div> : null}
+          {success ? <div className="alert alert--success">{success}</div> : null}
+        </>
+      ) : null}
     >
       <div className="metrics-grid">
         <MetricCard label="Guest Stays" value={String(consolidatedBookings.length)} />

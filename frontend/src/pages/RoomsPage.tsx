@@ -2,6 +2,7 @@ import { IonButton, IonIcon } from "@ionic/react";
 import { addOutline, archiveOutline, createOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ExcelTransferPanel } from "../components/ExcelTransferPanel";
 import { ModalDialog } from "../components/ModalDialog";
 import { RoomForm } from "../components/RoomForm";
 import { SectionCard } from "../components/SectionCard";
@@ -95,10 +96,21 @@ export const RoomsPage = () => {
         title="Rooms"
         className="rooms-page"
         actions={
-          <IonButton onClick={() => setRoomDialogMode("create")}>
-            <IonIcon icon={addOutline} slot="start" />
-            Add Room
-          </IonButton>
+          <>
+            <ExcelTransferPanel
+              title="Rooms"
+              exportPath="/api/v1/rooms/export"
+              importPath="/api/v1/rooms/import"
+              filenamePrefix="rooms"
+              onImported={loadRooms}
+              onError={setError}
+              onSuccess={setSuccess}
+            />
+            <IonButton onClick={() => setRoomDialogMode("create")}>
+              <IonIcon icon={addOutline} slot="start" />
+              Add Room
+            </IonButton>
+          </>
         }
         notices={error || success ? (
           <>

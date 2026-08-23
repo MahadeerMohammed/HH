@@ -659,6 +659,73 @@ small {
   gap: 1rem;
 }
 
+.excel-transfer-panel {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.excel-transfer-panel__dates,
+.excel-transfer-panel__actions {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.excel-transfer-panel label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: rgba(23, 38, 43, 0.68);
+}
+
+.excel-transfer-panel input[type="date"] {
+  min-height: 2.35rem;
+  border: 1px solid rgba(23, 107, 115, 0.24);
+  border-radius: 8px;
+  padding: 0 0.65rem;
+  background: #ffffff;
+  color: var(--ion-text-color);
+}
+
+.visually-hidden-file {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.import-preview {
+  display: grid;
+  gap: 1rem;
+}
+
+.import-preview__summary {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.import-preview__errors {
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.24);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: var(--ion-color-danger);
+  background: rgba(var(--ion-color-danger-rgb), 0.08);
+}
+
+.import-preview__errors p {
+  margin: 0.25rem 0;
+}
+
+.import-preview__table {
+  max-height: 320px;
+}
+
 .booking-link-alert {
   display: flex;
   align-items: center;

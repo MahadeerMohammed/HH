@@ -1,6 +1,7 @@
 import { IonButton, IonIcon } from "@ionic/react";
 import { addOutline, createOutline } from "ionicons/icons";
 import { useEffect, useState } from "react";
+import { ExcelTransferPanel } from "../components/ExcelTransferPanel";
 import { ExpenseForm } from "../components/ExpenseForm";
 import { ModalDialog } from "../components/ModalDialog";
 import { SectionCard } from "../components/SectionCard";
@@ -98,10 +99,21 @@ export const ExpensesPage = () => {
         title="Expenses"
         className="expenses-page"
         actions={
-          <IonButton onClick={() => setExpenseDialogMode("create")}>
-            <IonIcon icon={addOutline} slot="start" />
-            Add Expense
-          </IonButton>
+          <>
+            <ExcelTransferPanel
+              title="Expenses"
+              exportPath="/api/v1/expenses/export"
+              importPath="/api/v1/expenses/import"
+              filenamePrefix="expenses"
+              onImported={loadData}
+              onError={setError}
+              onSuccess={setSuccess}
+            />
+            <IonButton onClick={() => setExpenseDialogMode("create")}>
+              <IonIcon icon={addOutline} slot="start" />
+              Add Expense
+            </IonButton>
+          </>
         }
         notices={error || success ? (
           <>

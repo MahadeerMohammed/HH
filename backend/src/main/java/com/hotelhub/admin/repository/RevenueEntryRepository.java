@@ -24,6 +24,8 @@ public interface RevenueEntryRepository extends JpaRepository<RevenueEntry, UUID
     @EntityGraph(attributePaths = "room")
     List<RevenueEntry> findByBookingGroupId(UUID bookingGroupId);
 
+    boolean existsByImportId(UUID importId);
+
     @Query("select coalesce(sum(r.roomRent * r.rentDays), 0) from RevenueEntry r where r.checkInDate between :from and :to")
     BigDecimal sumGrossRevenueBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 
