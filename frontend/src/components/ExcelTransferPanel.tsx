@@ -124,8 +124,9 @@ export const ExcelTransferPanel = ({
     }
   };
 
-  const firstPreview = preview?.previewRows.slice(0, 5) ?? [];
-  const headers = firstPreview[0] ? Object.keys(firstPreview[0].values).slice(0, 6) : [];
+  const visiblePreviewRows = preview?.previewRows ?? [];
+  const visibleErrors = preview?.errors ?? [];
+  const headers = visiblePreviewRows[0] ? Object.keys(visiblePreviewRows[0].values).slice(0, 8) : [];
 
   return (
     <div className="excel-transfer-panel">
@@ -162,24 +163,38 @@ export const ExcelTransferPanel = ({
         />
       </div>
 
-      <ModalDialog isOpen={!!preview} title={`Import ${title}`} onClose={() => !importing && setPreview(null)} size="wide">
+      <ModalDialog
+        isOpen={!!preview}
+        title={`Import ${title}`}
+        onClose={() => !importing && setPreview(null)}
+        className="import-preview-dialog"
+      >
         {preview ? (
           <div className="import-preview">
             <div className="import-preview__summary">
-              <strong>{preview.validRows} valid</strong>
-              <span>{preview.totalRows} rows found</span>
-              <span>{preview.errors.length} issues</span>
+              <div>
+                <strong>{preview.totalRows}</strong>
+                <span>Rows Found</span>
+              </div>
+              <div>
+                <strong>{preview.validRows}</strong>
+                <span>Valid Rows</span>
+              </div>
+              <div className={preview.errors.length > 0 ? "import-preview__summary-item--danger" : "import-preview__summary-item--success"}>
+                <strong>{preview.errors.length}</strong>
+                <span>Issues</span>
+              </div>
             </div>
-            {preview.errors.length > 0 ? (
+            {visibleErrors.length > 0 ? (
               <div className="import-preview__errors">
-                {preview.errors.slice(0, 12).map((item, index) => (
+                {visibleErrors.map((item, index) => (
                   <p key={`${item.rowNumber}-${item.field}-${index}`}>
                     Row {item.rowNumber}, {item.field}: {item.message}
                   </p>
                 ))}
               </div>
             ) : null}
-            {firstPreview.length > 0 ? (
+            {visiblePreviewRows.length > 0 ? (
               <div className="table-shell import-preview__table">
                 <table>
                   <thead>
@@ -189,7 +204,7 @@ export const ExcelTransferPanel = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {firstPreview.map((row) => (
+                    {visiblePreviewRows.map((row) => (
                       <tr key={row.rowNumber}>
                         <td>{row.rowNumber}</td>
                         {headers.map((header) => <td key={header}>{row.values[header]}</td>)}

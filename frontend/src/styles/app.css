@@ -2904,3 +2904,281 @@ tbody td {
     border-top-color: var(--color-line);
   }
 }
+
+@media (max-width: 900px) {
+  .rooms-page .page-header,
+  .revenue-page .page-header,
+  .expenses-page .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rooms-page .page-header__actions,
+  .revenue-page .page-header__actions,
+  .expenses-page .page-header__actions {
+    display: grid;
+    width: 100%;
+    margin-left: 0;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .rooms-page .page-header__actions > ion-button,
+  .revenue-page .page-header__actions > ion-button,
+  .expenses-page .page-header__actions > ion-button {
+    width: 100%;
+  }
+
+  .excel-transfer-panel {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .excel-transfer-panel__dates {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .excel-transfer-panel__actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .excel-transfer-panel label,
+  .excel-transfer-panel input[type="date"],
+  .excel-transfer-panel ion-button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .excel-transfer-panel {
+    gap: 0.55rem;
+  }
+
+  .excel-transfer-panel__dates,
+  .excel-transfer-panel__actions {
+    gap: 0.45rem;
+  }
+
+  .excel-transfer-panel ion-button {
+    --padding-start: 0.45rem;
+    --padding-end: 0.45rem;
+    font-size: 0.76rem;
+  }
+}
+
+.import-preview {
+  min-width: 0;
+  gap: 0.85rem;
+}
+
+.import-preview__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.import-preview__summary > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  border: 1px solid var(--color-line, rgba(15, 61, 62, 0.12));
+  border-radius: 8px;
+  padding: 0.65rem;
+  background: rgba(248, 251, 251, 0.86);
+  line-height: 1.25;
+}
+
+.import-preview__summary strong {
+  color: var(--color-ink, #17262b);
+  font-size: 1.15rem;
+}
+
+.import-preview__summary span {
+  color: var(--color-muted, #5d6d6d);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.import-preview__summary-item--success {
+  border-color: rgba(36, 128, 111, 0.25) !important;
+  background: rgba(36, 128, 111, 0.08) !important;
+}
+
+.import-preview__summary-item--danger {
+  border-color: rgba(var(--ion-color-danger-rgb), 0.28) !important;
+  background: rgba(var(--ion-color-danger-rgb), 0.08) !important;
+}
+
+.import-preview__errors {
+  max-height: min(24vh, 11rem);
+  overflow: auto;
+  border-radius: 8px;
+  word-break: break-word;
+}
+
+.import-preview__table {
+  width: 100%;
+  max-height: min(34vh, 18rem);
+  overflow: auto;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.import-preview__table table {
+  min-width: 56rem;
+  table-layout: auto;
+}
+
+.import-preview__table th,
+.import-preview__table td {
+  white-space: nowrap;
+  padding: 0.7rem 0.85rem;
+}
+
+.import-preview .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding-top: 0.15rem;
+}
+
+@media (max-width: 768px) {
+  .import-preview-dialog {
+    display: grid;
+    place-items: center;
+    padding: 0.5rem;
+  }
+
+  .import-preview-dialog .modal-dialog__panel {
+    width: min(94vw, 42rem);
+    max-height: calc(100dvh - 4rem);
+    border-radius: 10px;
+  }
+
+  .import-preview-dialog .modal-dialog__body {
+    padding: 0.75rem;
+  }
+
+  .import-preview {
+    gap: 0.75rem;
+  }
+
+  .import-preview__summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .import-preview__summary > div {
+    padding: 0.55rem 0.45rem;
+    text-align: center;
+  }
+
+  .import-preview__summary strong {
+    font-size: 1rem;
+  }
+
+  .import-preview__summary span {
+    font-size: 0.65rem;
+  }
+
+  .import-preview__errors {
+    max-height: 11rem;
+    padding: 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .import-preview__table.table-shell {
+    overflow: auto;
+    padding: 0;
+  }
+
+  .import-preview__table.table-shell table {
+    display: table;
+    min-width: 44rem;
+  }
+
+  .import-preview__table.table-shell thead {
+    display: table-header-group;
+  }
+
+  .import-preview__table.table-shell tbody {
+    display: table-row-group;
+  }
+
+  .import-preview__table.table-shell tbody tr {
+    display: table-row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .import-preview__table.table-shell tbody td {
+    display: table-cell;
+    border-top: 1px solid var(--color-line, rgba(15, 61, 62, 0.12));
+    padding: 0.65rem 0.75rem;
+  }
+
+  .import-preview__table.table-shell tbody td::before {
+    content: none;
+  }
+
+  .import-preview .form-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .import-preview .form-actions ion-button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .import-preview__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .import-preview .form-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.import-preview-dialog {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+}
+
+.import-preview-dialog .modal-dialog__panel,
+.import-preview-dialog .modal-dialog__panel--wide {
+  width: min(94vw, 40rem) !important;
+  max-height: min(86vh, 42rem) !important;
+  border-radius: 10px !important;
+}
+
+.import-preview-dialog .modal-dialog__body {
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .import-preview-dialog {
+    padding: 1rem !important;
+  }
+
+  .import-preview-dialog .modal-dialog__panel,
+  .import-preview-dialog .modal-dialog__panel--wide {
+    width: min(92vw, 30rem) !important;
+    max-height: 84dvh !important;
+  }
+}
