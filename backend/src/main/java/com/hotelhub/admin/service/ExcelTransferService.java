@@ -209,7 +209,13 @@ public class ExcelTransferService {
             toSave.add(entry);
         }
 
-        return finish("revenue", parsed, toSave, commit, revenueEntryRepository::saveAll);
+        return finish("revenue", parsed, toSave, commit, entries -> {
+            entries.stream()
+                .filter(entry -> !entry.isCheckingOut())
+                .map(RevenueEntry::getRoom)
+                .forEach(room -> room.setStatus(RoomStatus.OCCUPIED));
+            revenueEntryRepository.saveAll(entries);
+        });
     }
 
     public ImportResultResponse importExpenses(MultipartFile file, boolean commit) throws IOException {
