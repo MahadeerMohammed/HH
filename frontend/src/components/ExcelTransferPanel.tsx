@@ -1,5 +1,5 @@
 import { IonButton, IonIcon } from "@ionic/react";
-import { cloudUploadOutline, downloadOutline } from "ionicons/icons";
+import { cloudUploadOutline, downloadOutline, saveOutline } from "ionicons/icons";
 import { useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import type { ImportResult } from "../types";
@@ -32,6 +32,7 @@ export const ExcelTransferPanel = ({
   const [toDate, setToDate] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportResult | null>(null);
+  const [backupDialog, setBackupDialog] = useState<"menu" | "download" | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [importing, setImporting] = useState(false);
 
@@ -64,6 +65,7 @@ export const ExcelTransferPanel = ({
       link.click();
       link.remove();
       URL.revokeObjectURL(link.href);
+      setBackupDialog(null);
     } catch (downloadError) {
       onError(downloadError instanceof Error ? downloadError.message : "Unable to download Excel file.");
     } finally {
@@ -130,38 +132,94 @@ export const ExcelTransferPanel = ({
 
   return (
     <div className="excel-transfer-panel">
-      <div className="excel-transfer-panel__dates">
-        <label>
-          <span>From</span>
-          <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-        </label>
-        <label>
-          <span>To</span>
-          <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-        </label>
-      </div>
-      <div className="excel-transfer-panel__actions">
-        <IonButton fill="outline" color="dark" onClick={() => void downloadExcel()} disabled={downloading}>
-          <IonIcon icon={downloadOutline} slot="start" />
-          {downloading ? "Downloading..." : "Download"}
-        </IonButton>
-        <IonButton fill="outline" color="dark" onClick={() => fileInputRef.current?.click()} disabled={importing}>
-          <IonIcon icon={cloudUploadOutline} slot="start" />
-          {importing ? "Checking..." : "Import"}
-        </IonButton>
-        <input
-          ref={fileInputRef}
-          className="visually-hidden-file"
-          type="file"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-              void uploadForPreview(file);
-            }
-          }}
-        />
-      </div>
+      <IonButton fill="outline" color="dark" onClick={() => setBackupDialog("menu")} disabled={downloading || importing}>
+        <IonIcon icon={saveOutline} slot="start" />
+        Backup
+      </IonButton>
+      <input
+        ref={fileInputRef}
+        className="visually-hidden-file"
+        type="file"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            void uploadForPreview(file);
+          }
+        }}
+      />
+
+      <ModalDialog
+        isOpen={backupDialog === "menu"}
+        title={`${title} Backup`}
+        onClose={() => !importing && !downloading && setBackupDialog(null)}
+        className="backup-choice-dialog"
+      >
+        <div className="backup-choice">
+          <button
+            type="button"
+            className="backup-choice__button"
+            disabled={importing}
+            onClick={() => {
+              setBackupDialog(null);
+              fileInputRef.current?.click();
+            }}
+          >
+            <IonIcon icon={cloudUploadOutline} aria-hidden="true" />
+            <span>
+              <strong>Import Excel</strong>
+              <small>Upload, validate, preview, then confirm.</small>
+            </span>
+          </button>
+          <button
+            type="button"
+            className="backup-choice__button"
+            disabled={downloading}
+            onClick={() => setBackupDialog("download")}
+          >
+            <IonIcon icon={downloadOutline} aria-hidden="true" />
+            <span>
+              <strong>Download Excel</strong>
+              <small>Choose a date range before downloading.</small>
+            </span>
+          </button>
+        </div>
+      </ModalDialog>
+
+      <ModalDialog
+        isOpen={backupDialog === "download"}
+        title={`Download ${title}`}
+        onClose={() => !downloading && setBackupDialog(null)}
+        className="backup-download-dialog"
+      >
+        <div className="backup-download">
+          <div className="backup-download__dates">
+            <label className="backup-download__field">
+              <span>From</span>
+              <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+            </label>
+            <label className="backup-download__field">
+              <span>To</span>
+              <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+            </label>
+          </div>
+          <div className="backup-download__actions">
+            <IonButton fill="outline" color="medium" disabled={downloading} onClick={() => setBackupDialog("menu")}>
+              Back
+            </IonButton>
+            <IonButton fill="outline" color="medium" disabled={downloading} onClick={() => {
+              setFromDate("");
+              setToDate("");
+            }}>
+              All Dates
+            </IonButton>
+            <IonButton disabled={downloading} onClick={() => void downloadExcel()}>
+              <IonIcon icon={downloadOutline} slot="start" />
+              {downloading ? "Downloading..." : "Download"}
+            </IonButton>
+          </div>
+        </div>
+      </ModalDialog>
 
       <ModalDialog
         isOpen={!!preview}

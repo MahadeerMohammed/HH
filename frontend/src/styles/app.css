@@ -666,6 +666,89 @@ small {
   flex-wrap: wrap;
 }
 
+.backup-choice {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.backup-choice__button {
+  display: grid;
+  grid-template-columns: 2.35rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--color-line, rgba(15, 61, 62, 0.12));
+  border-radius: 8px;
+  background: rgba(248, 251, 251, 0.9);
+  color: var(--color-ink, #17262b);
+  text-align: left;
+}
+
+.backup-choice__button ion-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--color-primary, #176b73);
+}
+
+.backup-choice__button strong,
+.backup-choice__button small {
+  display: block;
+}
+
+.backup-choice__button small {
+  margin-top: 0.15rem;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.backup-download {
+  display: grid;
+  gap: 1rem;
+}
+
+.backup-download__dates {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.backup-download__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.backup-download__field span {
+  color: var(--color-muted, #5d6d6d);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.backup-download__field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-line, rgba(15, 61, 62, 0.12));
+  border-radius: 8px;
+  padding: 0 0.85rem;
+  background: #ffffff;
+  color: var(--color-ink, #17262b);
+}
+
+.backup-download__actions {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.backup-download__actions ion-button {
+  min-width: 0;
+}
+
 .excel-transfer-panel__dates,
 .excel-transfer-panel__actions {
   display: flex;
@@ -2934,6 +3017,10 @@ tbody td {
     align-items: stretch;
   }
 
+  .excel-transfer-panel > ion-button {
+    width: 100%;
+  }
+
   .excel-transfer-panel__dates {
     display: grid;
     width: 100%;
@@ -3160,11 +3247,30 @@ tbody td {
   padding: 1rem !important;
 }
 
+.backup-choice-dialog,
+.backup-download-dialog {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+}
+
 .import-preview-dialog .modal-dialog__panel,
-.import-preview-dialog .modal-dialog__panel--wide {
+.import-preview-dialog .modal-dialog__panel--wide,
+.backup-choice-dialog .modal-dialog__panel,
+.backup-download-dialog .modal-dialog__panel {
   width: min(94vw, 40rem) !important;
   max-height: min(86vh, 42rem) !important;
   border-radius: 10px !important;
+}
+
+.backup-choice-dialog .modal-dialog__panel,
+.backup-download-dialog .modal-dialog__panel {
+  width: min(92vw, 28rem) !important;
+}
+
+.backup-download-dialog .modal-dialog__panel {
+  width: min(92vw, 24rem) !important;
 }
 
 .import-preview-dialog .modal-dialog__body {
@@ -3176,9 +3282,28 @@ tbody td {
     padding: 1rem !important;
   }
 
+  .backup-choice-dialog,
+  .backup-download-dialog {
+    padding: 1rem !important;
+  }
+
   .import-preview-dialog .modal-dialog__panel,
-  .import-preview-dialog .modal-dialog__panel--wide {
+  .import-preview-dialog .modal-dialog__panel--wide,
+  .backup-choice-dialog .modal-dialog__panel,
+  .backup-download-dialog .modal-dialog__panel {
     width: min(92vw, 30rem) !important;
     max-height: 84dvh !important;
+  }
+
+  .backup-download-dialog .modal-dialog__panel {
+    width: min(92vw, 24rem) !important;
+  }
+
+  .backup-download__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .backup-download__actions ion-button {
+    width: 100%;
   }
 }
