@@ -12,6 +12,7 @@ import com.hotelhub.admin.dto.finance.ReportResponse;
 import com.hotelhub.admin.dto.finance.RevenueEntryRequest;
 import com.hotelhub.admin.dto.finance.RevenueEntryResponse;
 import com.hotelhub.admin.dto.finance.RoomPerformanceResponse;
+import com.hotelhub.admin.dto.common.PagedResponse;
 import com.hotelhub.admin.dto.imports.ImportResultResponse;
 import com.hotelhub.admin.exception.BadRequestException;
 import com.hotelhub.admin.exception.ResourceNotFoundException;
@@ -34,6 +35,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,6 +58,17 @@ public class FinanceService {
         return listRevenueEntities(fromDate, toDate).stream()
             .map(this::toRevenueResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<RevenueEntryResponse> listRevenueEntriesPage(String filter, LocalDate fromDate, LocalDate toDate, int page) {
+        FilterRange range = resolveFilterRange(filter, fromDate, toDate);
+        Page<RevenueEntry> result = revenueEntryRepository.findPageByCheckInDateBetween(
+            range.from(),
+            range.to(),
+            PageRequest.of(Math.max(page, 0), range.pageSize(), Sort.by(Sort.Direction.DESC, "checkInDate", "createdAt"))
+        );
+        return toPagedResponse(result.map(this::toRevenueResponse));
     }
 
     @Transactional(readOnly = true)
@@ -181,6 +196,17 @@ public class FinanceService {
         return listExpenseEntities(fromDate, toDate).stream()
             .map(this::toExpenseResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<ExpenseResponse> listExpensesPage(String filter, LocalDate fromDate, LocalDate toDate, int page) {
+        FilterRange range = resolveFilterRange(filter, fromDate, toDate);
+        Page<Expense> result = expenseRepository.findPageByExpenseDateBetween(
+            range.from(),
+            range.to(),
+            PageRequest.of(Math.max(page, 0), range.pageSize(), Sort.by(Sort.Direction.DESC, "expenseDate", "createdAt"))
+        );
+        return toPagedResponse(result.map(this::toExpenseResponse));
     }
 
     @Transactional(readOnly = true)
@@ -438,6 +464,37 @@ public class FinanceService {
             : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
     }
 
+    private <T> PagedResponse<T> toPagedResponse(Page<T> page) {
+        return new PagedResponse<>(
+            page.getContent(),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages(),
+            page.isFirst(),
+            page.isLast()
+        );
+    }
+
+    private FilterRange resolveFilterRange(String filter, LocalDate fromDate, LocalDate toDate) {
+        String normalized = filter == null || filter.isBlank() ? "daily" : filter.trim().toLowerCase();
+        LocalDate today = LocalDate.now();
+        return switch (normalized) {
+            case "custom", "date_range", "date-range" -> {
+                DateRange range = resolveRange(fromDate, toDate);
+                yield new FilterRange(range.from(), range.to(), 15);
+            }
+            case "weekly" -> {
+                LocalDate from = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+                yield new FilterRange(from, from.plusDays(6), 10);
+            }
+            case "monthly" -> new FilterRange(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), 15);
+            case "yearly" -> new FilterRange(today.withDayOfYear(1), today.withDayOfYear(today.lengthOfYear()), 30);
+            case "daily" -> new FilterRange(today, today, 5);
+            default -> throw new BadRequestException("Unsupported filter. Use daily, weekly, monthly, yearly, or custom.");
+        };
+    }
+
     private BigDecimal normalize(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value.setScale(2, RoundingMode.HALF_UP);
     }
@@ -469,5 +526,8 @@ public class FinanceService {
     }
 
     private record DateRange(LocalDate from, LocalDate to) {
+    }
+
+    private record FilterRange(LocalDate from, LocalDate to, int pageSize) {
     }
 }

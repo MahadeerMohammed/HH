@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,6 +19,16 @@ public interface RevenueEntryRepository extends JpaRepository<RevenueEntry, UUID
 
     @EntityGraph(attributePaths = "room")
     List<RevenueEntry> findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(LocalDate from, LocalDate to);
+
+    @Query(
+        value = "select r from RevenueEntry r join fetch r.room where r.checkInDate between :from and :to",
+        countQuery = "select count(r) from RevenueEntry r where r.checkInDate between :from and :to"
+    )
+    Page<RevenueEntry> findPageByCheckInDateBetween(
+        @Param("from") LocalDate from,
+        @Param("to") LocalDate to,
+        Pageable pageable
+    );
 
     @EntityGraph(attributePaths = "room")
     List<RevenueEntry> findByRoomIdOrderByCreatedAtDesc(UUID roomId);

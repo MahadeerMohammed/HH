@@ -1,7 +1,8 @@
 import { IonButton, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from "@ionic/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ExcelTransferPanel } from "../components/ExcelTransferPanel";
+import { FinanceListFilter, type FinanceFilterPeriod } from "../components/FinanceListFilter";
 import { MetricCard } from "../components/MetricCard";
 import { ModalDialog } from "../components/ModalDialog";
 import { SectionCard } from "../components/SectionCard";
@@ -9,7 +10,7 @@ import { WorkspacePage } from "../components/WorkspacePage";
 import { useAuth } from "../contexts/AuthContext";
 import { formatCurrency, formatDate } from "../lib/formatters";
 import { NewRoomBookingPage } from "./NewRoomBookingPage";
-import type { RevenueEntry } from "../types";
+import type { PagedResponse, RevenueEntry } from "../types";
 
 interface ConsolidatedBooking {
   bookingGroupId: string;
@@ -23,9 +24,23 @@ interface ConsolidatedBooking {
   lastUpdate: string;
 }
 
+const initialPageState = {
+  page: 0,
+  size: 5,
+  totalElements: 0,
+  totalPages: 0,
+  first: true,
+  last: true
+};
+
 export const RevenuePage = () => {
   const { apiRequest } = useAuth();
   const [entries, setEntries] = useState<RevenueEntry[]>([]);
+  const [filterOpen, setFilterOpen] = useState(true);
+  const [filterPeriod, setFilterPeriod] = useState<FinanceFilterPeriod>("daily");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [pageState, setPageState] = useState(initialPageState);
   const [selectedBooking, setSelectedBooking] = useState<ConsolidatedBooking | null>(null);
   const [bookingDialogMode, setBookingDialogMode] = useState<"create" | "edit" | null>(null);
   const [editingBooking, setEditingBooking] = useState<ConsolidatedBooking | null>(null);
@@ -35,23 +50,69 @@ export const RevenuePage = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async (
+    page = pageState.page,
+    options?: {
+      period?: FinanceFilterPeriod;
+      fromDate?: string;
+      toDate?: string;
+    }
+  ) => {
     setLoading(true);
     setError(null);
 
     try {
-      const payload = await apiRequest<RevenueEntry[]>("/api/v1/revenue");
-      setEntries(payload);
+      const activePeriod = options?.period ?? filterPeriod;
+      const activeFromDate = options?.fromDate ?? fromDate;
+      const activeToDate = options?.toDate ?? toDate;
+      const params = new URLSearchParams({
+        filter: activePeriod,
+        page: String(Math.max(page, 0))
+      });
+      if (activePeriod === "custom") {
+        if (activeFromDate) {
+          params.set("fromDate", activeFromDate);
+        }
+        if (activeToDate) {
+          params.set("toDate", activeToDate);
+        }
+      }
+      const payload = await apiRequest<PagedResponse<RevenueEntry>>(`/api/v1/revenue/page?${params.toString()}`);
+      setEntries(payload.content);
+      setPageState({
+        page: payload.page,
+        size: payload.size,
+        totalElements: payload.totalElements,
+        totalPages: payload.totalPages,
+        first: payload.first,
+        last: payload.last
+      });
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load revenue.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiRequest, filterPeriod, fromDate, pageState.page, toDate]);
 
   useEffect(() => {
-    void loadData();
-  }, []);
+    void loadData(0);
+  }, [filterPeriod]);
+
+  const handleApplyFilter = () => {
+    void loadData(0);
+  };
+
+  const handleResetFilter = () => {
+    setFilterPeriod("daily");
+    setFromDate("");
+    setToDate("");
+    setPageState(initialPageState);
+    void loadData(0, { period: "daily", fromDate: "", toDate: "" });
+  };
+
+  const handlePageChange = (page: number) => {
+    void loadData(page);
+  };
 
   const handleDelete = async () => {
     if (!deleteBookingId) {
@@ -154,8 +215,28 @@ export const RevenuePage = () => {
       </div>
 
       <SectionCard>
+        <FinanceListFilter
+          period={filterPeriod}
+          fromDate={fromDate}
+          toDate={toDate}
+          open={filterOpen}
+          loading={loading}
+          pageState={pageState}
+          onPeriodChange={(period) => {
+            setFilterPeriod(period);
+            setPageState(initialPageState);
+          }}
+          onFromDateChange={setFromDate}
+          onToDateChange={setToDate}
+          onOpenChange={setFilterOpen}
+          onApply={handleApplyFilter}
+          onReset={handleResetFilter}
+          onPageChange={handlePageChange}
+        />
         {loading ? (
           <div className="centered-state centered-state--small">Loading revenue...</div>
+        ) : consolidatedBookings.length === 0 ? (
+          <div className="centered-state centered-state--small">No revenue records found.</div>
         ) : (
           <div className="table-shell">
             <table>

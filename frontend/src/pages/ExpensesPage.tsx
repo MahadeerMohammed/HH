@@ -1,42 +1,87 @@
 import { IonButton, IonIcon } from "@ionic/react";
 import { addOutline, createOutline } from "ionicons/icons";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExcelTransferPanel } from "../components/ExcelTransferPanel";
 import { ExpenseForm } from "../components/ExpenseForm";
+import { FinanceListFilter, type FinanceFilterPeriod } from "../components/FinanceListFilter";
 import { ModalDialog } from "../components/ModalDialog";
 import { SectionCard } from "../components/SectionCard";
 import { WorkspacePage } from "../components/WorkspacePage";
 import { useAuth } from "../contexts/AuthContext";
 import { formatCurrency, formatDate } from "../lib/formatters";
-import type { ExpenseCategory, ExpenseEntry, Room } from "../types";
+import type { ExpenseCategory, ExpenseEntry, PagedResponse, Room } from "../types";
+
+const initialPageState = {
+  page: 0,
+  size: 5,
+  totalElements: 0,
+  totalPages: 0,
+  first: true,
+  last: true
+};
 
 export const ExpensesPage = () => {
   const { apiRequest } = useAuth();
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [filterOpen, setFilterOpen] = useState(true);
+  const [filterPeriod, setFilterPeriod] = useState<FinanceFilterPeriod>("daily");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [pageState, setPageState] = useState(initialPageState);
   const [expenseDialogMode, setExpenseDialogMode] = useState<"create" | "edit" | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<ExpenseEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async (
+    page = pageState.page,
+    options?: {
+      period?: FinanceFilterPeriod;
+      fromDate?: string;
+      toDate?: string;
+    }
+  ) => {
     setLoading(true);
     setError(null);
 
     try {
-      const payload = await apiRequest<ExpenseEntry[]>("/api/v1/expenses");
-      setExpenses(payload);
+      const activePeriod = options?.period ?? filterPeriod;
+      const activeFromDate = options?.fromDate ?? fromDate;
+      const activeToDate = options?.toDate ?? toDate;
+      const params = new URLSearchParams({
+        filter: activePeriod,
+        page: String(Math.max(page, 0))
+      });
+      if (activePeriod === "custom") {
+        if (activeFromDate) {
+          params.set("fromDate", activeFromDate);
+        }
+        if (activeToDate) {
+          params.set("toDate", activeToDate);
+        }
+      }
+      const payload = await apiRequest<PagedResponse<ExpenseEntry>>(`/api/v1/expenses/page?${params.toString()}`);
+      setExpenses(payload.content);
+      setPageState({
+        page: payload.page,
+        size: payload.size,
+        totalElements: payload.totalElements,
+        totalPages: payload.totalPages,
+        first: payload.first,
+        last: payload.last
+      });
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load expenses.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiRequest, filterPeriod, fromDate, pageState.page, toDate]);
 
   useEffect(() => {
-    void loadData();
-  }, [apiRequest]);
+    void loadData(0);
+  }, [filterPeriod]);
 
   useEffect(() => {
     const loadRooms = async () => {
@@ -50,6 +95,22 @@ export const ExpensesPage = () => {
 
     void loadRooms();
   }, [apiRequest]);
+
+  const handleApplyFilter = () => {
+    void loadData(0);
+  };
+
+  const handleResetFilter = () => {
+    setFilterPeriod("daily");
+    setFromDate("");
+    setToDate("");
+    setPageState(initialPageState);
+    void loadData(0, { period: "daily", fromDate: "", toDate: "" });
+  };
+
+  const handlePageChange = (page: number) => {
+    void loadData(page);
+  };
 
   const startEditing = (expense: ExpenseEntry) => {
     setSelectedExpense(expense);
@@ -123,8 +184,28 @@ export const ExpensesPage = () => {
         ) : null}
     >
       <SectionCard>
+        <FinanceListFilter
+          period={filterPeriod}
+          fromDate={fromDate}
+          toDate={toDate}
+          open={filterOpen}
+          loading={loading}
+          pageState={pageState}
+          onPeriodChange={(period) => {
+            setFilterPeriod(period);
+            setPageState(initialPageState);
+          }}
+          onFromDateChange={setFromDate}
+          onToDateChange={setToDate}
+          onOpenChange={setFilterOpen}
+          onApply={handleApplyFilter}
+          onReset={handleResetFilter}
+          onPageChange={handlePageChange}
+        />
         {loading ? (
           <div className="centered-state centered-state--small">Loading expenses...</div>
+        ) : expenses.length === 0 ? (
+          <div className="centered-state centered-state--small">No expenses found.</div>
         ) : (
           <div className="table-shell">
             <table>

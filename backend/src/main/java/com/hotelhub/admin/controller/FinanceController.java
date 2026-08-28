@@ -5,6 +5,7 @@ import com.hotelhub.admin.dto.finance.ExpenseRequest;
 import com.hotelhub.admin.dto.finance.ExpenseResponse;
 import com.hotelhub.admin.dto.finance.RevenueEntryRequest;
 import com.hotelhub.admin.dto.finance.RevenueEntryResponse;
+import com.hotelhub.admin.dto.common.PagedResponse;
 import com.hotelhub.admin.dto.imports.ImportResultResponse;
 import com.hotelhub.admin.service.FinanceService;
 import jakarta.validation.Valid;
@@ -53,6 +54,16 @@ public class FinanceController {
         return financeService.listRevenueEntries(fromDate, toDate);
     }
 
+    @GetMapping("/revenue/page")
+    public PagedResponse<RevenueEntryResponse> listRevenuePage(
+        @RequestParam(defaultValue = "daily") String filter,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+        @RequestParam(defaultValue = "0") int page
+    ) {
+        return financeService.listRevenueEntriesPage(filter, fromDate, toDate, page);
+    }
+
     @GetMapping("/revenue/export")
     public ResponseEntity<byte[]> exportRevenue(
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
@@ -92,6 +103,16 @@ public class FinanceController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
     ) {
         return financeService.listExpenses(fromDate, toDate);
+    }
+
+    @GetMapping("/expenses/page")
+    public PagedResponse<ExpenseResponse> listExpensesPage(
+        @RequestParam(defaultValue = "daily") String filter,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+        @RequestParam(defaultValue = "0") int page
+    ) {
+        return financeService.listExpensesPage(filter, fromDate, toDate, page);
     }
 
     @GetMapping("/expenses/export")
