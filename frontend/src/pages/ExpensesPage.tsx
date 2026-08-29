@@ -1,5 +1,5 @@
 import { IonButton, IonIcon } from "@ionic/react";
-import { addOutline, createOutline } from "ionicons/icons";
+import { addOutline, createOutline, filterOutline } from "ionicons/icons";
 import { useCallback, useEffect, useState } from "react";
 import { ExcelTransferPanel } from "../components/ExcelTransferPanel";
 import { ExpenseForm } from "../components/ExpenseForm";
@@ -24,7 +24,7 @@ export const ExpensesPage = () => {
   const { apiRequest } = useAuth();
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [filterOpen, setFilterOpen] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [filterPeriod, setFilterPeriod] = useState<FinanceFilterPeriod>("daily");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -170,6 +170,10 @@ export const ExpensesPage = () => {
               onError={setError}
               onSuccess={setSuccess}
             />
+            <IonButton className="page-filter-button" fill="outline" color="dark" onClick={() => setFilterOpen(true)}>
+              <IonIcon icon={filterOutline} slot="start" />
+              Filter
+            </IonButton>
             <IonButton onClick={() => setExpenseDialogMode("create")}>
               <IonIcon icon={addOutline} slot="start" />
               Add Expense

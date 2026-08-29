@@ -819,6 +819,14 @@ small {
   background: rgba(248, 251, 251, 0.9);
 }
 
+.finance-list-filter__backdrop {
+  display: none;
+}
+
+.page-filter-button {
+  display: none;
+}
+
 .finance-list-filter__header,
 .finance-list-pagination {
   display: flex;
@@ -3106,26 +3114,41 @@ tbody td {
   .rooms-page .page-header__actions,
   .revenue-page .page-header__actions,
   .expenses-page .page-header__actions {
-    display: grid;
+    display: flex;
     width: 100%;
     margin-left: 0;
-    grid-template-columns: 1fr;
-    justify-content: stretch;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
   }
 
   .rooms-page .page-header__actions > ion-button,
   .revenue-page .page-header__actions > ion-button,
   .expenses-page .page-header__actions > ion-button {
-    width: 100%;
+    width: auto;
+    min-width: 0;
+    min-height: 2.35rem;
+    --padding-start: 0.7rem;
+    --padding-end: 0.7rem;
+    --padding-top: 0.4rem;
+    --padding-bottom: 0.4rem;
+    font-size: 0.8rem;
   }
 
   .excel-transfer-panel {
-    width: 100%;
-    align-items: stretch;
+    width: auto;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .excel-transfer-panel > ion-button {
-    width: 100%;
+    width: auto;
+    min-height: 2.35rem;
+    --padding-start: 0.7rem;
+    --padding-end: 0.7rem;
+    --padding-top: 0.4rem;
+    --padding-bottom: 0.4rem;
+    font-size: 0.8rem;
   }
 
   .excel-transfer-panel__dates {
@@ -3143,8 +3166,12 @@ tbody td {
   .excel-transfer-panel label,
   .excel-transfer-panel input[type="date"],
   .excel-transfer-panel ion-button {
-    width: 100%;
+    width: auto;
     min-width: 0;
+  }
+
+  .page-filter-button {
+    display: inline-flex;
   }
 
   .finance-list-filter__body {
@@ -3178,6 +3205,19 @@ tbody td {
     font-size: 0.76rem;
   }
 
+  .revenue-page .page-header__actions,
+  .expenses-page .page-header__actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+  }
+
+  .revenue-page .page-header__actions::-webkit-scrollbar,
+  .expenses-page .page-header__actions::-webkit-scrollbar {
+    display: none;
+  }
+
   .finance-list-filter {
     padding: 0.7rem;
   }
@@ -3204,6 +3244,62 @@ tbody td {
 }
 
 @media (max-width: 640px) {
+  .finance-list-filter:not(.finance-list-filter--open) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .finance-list-filter:not(.finance-list-filter--open) .finance-list-filter__header {
+    display: none;
+  }
+
+  .finance-list-filter__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: block;
+    border: 0;
+    padding: 0;
+    background: rgba(12, 27, 32, 0.42);
+    backdrop-filter: blur(2px);
+  }
+
+  .finance-list-filter--open {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 90;
+    align-content: start;
+    width: min(88vw, 24rem);
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    border-width: 0 0 0 1px;
+    border-radius: 0;
+    padding: 1rem;
+    background: #ffffff;
+    box-shadow: -24px 0 60px rgba(12, 27, 32, 0.22);
+    animation: finance-filter-slide-in 180ms ease-out;
+  }
+
+  .finance-list-filter--open .finance-list-filter__header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: -1rem -1rem 0;
+    padding: 1rem;
+    background: #ffffff;
+    border-bottom: 1px solid var(--color-line, rgba(15, 61, 62, 0.12));
+  }
+
+  .finance-list-filter--open .finance-list-filter__body {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-list-filter--open .finance-list-filter__actions {
+    grid-template-columns: 1fr;
+  }
+
   .finance-list-pagination {
     display: grid;
     grid-template-columns: 1fr;
@@ -3211,6 +3307,16 @@ tbody td {
 
   .finance-list-pagination span {
     order: -1;
+  }
+}
+
+@keyframes finance-filter-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
   }
 }
 

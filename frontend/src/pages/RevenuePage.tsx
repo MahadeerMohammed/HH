@@ -1,4 +1,5 @@
-import { IonButton, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from "@ionic/react";
+import { IonButton, IonContent, IonHeader, IonIcon, IonModal, IonTitle, IonToolbar } from "@ionic/react";
+import { filterOutline } from "ionicons/icons";
 import { useCallback, useEffect, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ExcelTransferPanel } from "../components/ExcelTransferPanel";
@@ -36,7 +37,7 @@ const initialPageState = {
 export const RevenuePage = () => {
   const { apiRequest } = useAuth();
   const [entries, setEntries] = useState<RevenueEntry[]>([]);
-  const [filterOpen, setFilterOpen] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [filterPeriod, setFilterPeriod] = useState<FinanceFilterPeriod>("daily");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -195,6 +196,10 @@ export const RevenuePage = () => {
             onError={setError}
             onSuccess={setSuccess}
           />
+          <IonButton className="page-filter-button" fill="outline" color="dark" onClick={() => setFilterOpen(true)}>
+            <IonIcon icon={filterOutline} slot="start" />
+            Filter
+          </IonButton>
           <IonButton onClick={() => setBookingDialogMode("create")}>
             New Room Booking
           </IonButton>
