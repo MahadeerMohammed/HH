@@ -12,6 +12,8 @@ import com.hotelhub.admin.dto.finance.ReportResponse;
 import com.hotelhub.admin.dto.finance.RevenueEntryRequest;
 import com.hotelhub.admin.dto.finance.RevenueEntryResponse;
 import com.hotelhub.admin.dto.finance.RoomPerformanceResponse;
+import com.hotelhub.admin.dto.common.PagedResponse;
+import com.hotelhub.admin.dto.imports.ImportResultResponse;
 import com.hotelhub.admin.exception.BadRequestException;
 import com.hotelhub.admin.exception.ResourceNotFoundException;
 import com.hotelhub.admin.repository.ExpenseRepository;
@@ -19,6 +21,7 @@ import com.hotelhub.admin.repository.RevenueEntryRepository;
 import com.hotelhub.admin.repository.RoomRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.YearMonth;
@@ -32,8 +35,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -44,17 +51,34 @@ public class FinanceService {
     private final RevenueEntryRepository revenueEntryRepository;
     private final ExpenseRepository expenseRepository;
     private final RoomRepository roomRepository;
+    private final ExcelTransferService excelTransferService;
 
     @Transactional(readOnly = true)
     public List<RevenueEntryResponse> listRevenueEntries(LocalDate fromDate, LocalDate toDate) {
-        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
-        List<RevenueEntry> entries = dateRange == null
-            ? revenueEntryRepository.findAllByOrderByCheckInDateDescCreatedAtDesc()
-            : revenueEntryRepository.findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
-
-        return entries.stream()
+        return listRevenueEntities(fromDate, toDate).stream()
             .map(this::toRevenueResponse)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<RevenueEntryResponse> listRevenueEntriesPage(String filter, LocalDate fromDate, LocalDate toDate, int page) {
+        FilterRange range = resolveFilterRange(filter, fromDate, toDate);
+        Page<RevenueEntry> result = revenueEntryRepository.findPageByCheckInDateBetween(
+            range.from(),
+            range.to(),
+            PageRequest.of(Math.max(page, 0), range.pageSize(), Sort.by(Sort.Direction.DESC, "checkInDate", "createdAt"))
+        );
+        return toPagedResponse(result.map(this::toRevenueResponse));
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportRevenue(LocalDate fromDate, LocalDate toDate) {
+        return excelTransferService.exportRevenue(listRevenueEntities(fromDate, toDate));
+    }
+
+    @Transactional
+    public ImportResultResponse importRevenue(MultipartFile file, boolean commit) throws IOException {
+        return excelTransferService.importRevenue(file, commit);
     }
 
     @Transactional
@@ -169,32 +193,60 @@ public class FinanceService {
 
     @Transactional(readOnly = true)
     public List<ExpenseResponse> listExpenses(LocalDate fromDate, LocalDate toDate) {
-        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
-        List<Expense> expenses = dateRange == null
-            ? expenseRepository.findAllByOrderByExpenseDateDescCreatedAtDesc()
-            : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
-
-        return expenses.stream()
+        return listExpenseEntities(fromDate, toDate).stream()
             .map(this::toExpenseResponse)
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public PagedResponse<ExpenseResponse> listExpensesPage(String filter, LocalDate fromDate, LocalDate toDate, int page) {
+        FilterRange range = resolveFilterRange(filter, fromDate, toDate);
+        Page<Expense> result = expenseRepository.findPageByExpenseDateBetween(
+            range.from(),
+            range.to(),
+            PageRequest.of(Math.max(page, 0), range.pageSize(), Sort.by(Sort.Direction.DESC, "expenseDate", "createdAt"))
+        );
+        return toPagedResponse(result.map(this::toExpenseResponse));
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportExpenses(LocalDate fromDate, LocalDate toDate) {
+        return excelTransferService.exportExpenses(listExpenseEntities(fromDate, toDate));
+    }
+
+    @Transactional
+    public ImportResultResponse importExpenses(MultipartFile file, boolean commit) throws IOException {
+        return excelTransferService.importExpenses(file, commit);
+    }
+
     @Transactional
     public ExpenseResponse createExpense(ExpenseRequest request) {
+        Expense expense = new Expense();
+        applyExpenseRequest(expense, request);
+        return toExpenseResponse(expenseRepository.save(expense));
+    }
+
+    @Transactional
+    public ExpenseResponse updateExpense(UUID expenseId, ExpenseRequest request) {
+        Expense expense = expenseRepository.findById(expenseId)
+            .orElseThrow(() -> new ResourceNotFoundException("Expense not found."));
+
+        applyExpenseRequest(expense, request);
+        return toExpenseResponse(expenseRepository.save(expense));
+    }
+
+    private void applyExpenseRequest(Expense expense, ExpenseRequest request) {
         Room room = request.roomId() == null
             ? null
             : roomRepository.findByIdAndActiveTrue(request.roomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found."));
 
-        Expense expense = new Expense();
         expense.setRoom(room);
         expense.setExpenseDate(request.expenseDate());
         expense.setCategory(request.category());
         expense.setVendorName(request.vendorName().trim());
         expense.setAmount(request.amount());
         expense.setNotes(request.notes() == null ? null : request.notes().trim());
-
-        return toExpenseResponse(expenseRepository.save(expense));
     }
 
     @Transactional(readOnly = true)
@@ -338,6 +390,7 @@ public class FinanceService {
     private RevenueEntryResponse toRevenueResponse(RevenueEntry entry) {
         return new RevenueEntryResponse(
             entry.getId(),
+            entry.getImportId(),
             entry.getBookingGroupId(),
             entry.getRoom().getId(),
             entry.getRoom().getRoomNumber(),
@@ -364,6 +417,7 @@ public class FinanceService {
     private ExpenseResponse toExpenseResponse(Expense expense) {
         return new ExpenseResponse(
             expense.getId(),
+            expense.getImportId(),
             expense.getRoom() == null ? null : expense.getRoom().getId(),
             expense.getRoom() == null ? null : expense.getRoom().getRoomNumber(),
             expense.getExpenseDate(),
@@ -394,6 +448,51 @@ public class FinanceService {
             return null;
         }
         return resolveRange(fromDate, toDate);
+    }
+
+    private List<RevenueEntry> listRevenueEntities(LocalDate fromDate, LocalDate toDate) {
+        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
+        return dateRange == null
+            ? revenueEntryRepository.findAllByOrderByCheckInDateDescCreatedAtDesc()
+            : revenueEntryRepository.findByCheckInDateBetweenOrderByCheckInDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
+    }
+
+    private List<Expense> listExpenseEntities(LocalDate fromDate, LocalDate toDate) {
+        DateRange dateRange = resolveOptionalRange(fromDate, toDate);
+        return dateRange == null
+            ? expenseRepository.findAllByOrderByExpenseDateDescCreatedAtDesc()
+            : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateDescCreatedAtDesc(dateRange.from(), dateRange.to());
+    }
+
+    private <T> PagedResponse<T> toPagedResponse(Page<T> page) {
+        return new PagedResponse<>(
+            page.getContent(),
+            page.getNumber(),
+            page.getSize(),
+            page.getTotalElements(),
+            page.getTotalPages(),
+            page.isFirst(),
+            page.isLast()
+        );
+    }
+
+    private FilterRange resolveFilterRange(String filter, LocalDate fromDate, LocalDate toDate) {
+        String normalized = filter == null || filter.isBlank() ? "daily" : filter.trim().toLowerCase();
+        LocalDate today = LocalDate.now();
+        return switch (normalized) {
+            case "custom", "date_range", "date-range" -> {
+                DateRange range = resolveRange(fromDate, toDate);
+                yield new FilterRange(range.from(), range.to(), 15);
+            }
+            case "weekly" -> {
+                LocalDate from = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+                yield new FilterRange(from, from.plusDays(6), 10);
+            }
+            case "monthly" -> new FilterRange(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), 15);
+            case "yearly" -> new FilterRange(today.withDayOfYear(1), today.withDayOfYear(today.lengthOfYear()), 30);
+            case "daily" -> new FilterRange(today, today, 5);
+            default -> throw new BadRequestException("Unsupported filter. Use daily, weekly, monthly, yearly, or custom.");
+        };
     }
 
     private BigDecimal normalize(BigDecimal value) {
@@ -427,5 +526,8 @@ public class FinanceService {
     }
 
     private record DateRange(LocalDate from, LocalDate to) {
+    }
+
+    private record FilterRange(LocalDate from, LocalDate to, int pageSize) {
     }
 }

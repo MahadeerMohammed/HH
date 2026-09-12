@@ -103,13 +103,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchWithAuth = useCallback(
     async (path: string, init?: RequestInit) => {
+      const isFormData = init?.body instanceof FormData;
       const execute = async (token: string | null) =>
         fetch(`${apiBaseUrl}${path}`, {
           ...init,
           credentials: "include",
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(init?.body ? { "Content-Type": "application/json" } : {}),
+            ...(init?.body && !isFormData ? { "Content-Type": "application/json" } : {}),
             ...(init?.headers ?? {})
           }
         });

@@ -25,6 +25,9 @@ public class Room extends BaseEntity {
     @UuidGenerator
     private UUID id;
 
+    @Column(name = "import_id", nullable = false, unique = true)
+    private UUID importId;
+
     @Column(nullable = false, unique = true, length = 50)
     private String roomNumber;
 
@@ -52,6 +55,9 @@ public class Room extends BaseEntity {
 
     @PrePersist
     void prePersist() {
+        if (importId == null) {
+            importId = UUID.randomUUID();
+        }
         if (status == null) {
             status = RoomStatus.AVAILABLE;
         }

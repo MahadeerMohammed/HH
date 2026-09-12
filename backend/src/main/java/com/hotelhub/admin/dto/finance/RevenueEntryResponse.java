@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public record RevenueEntryResponse(
     UUID id,
+    UUID importId,
     UUID bookingGroupId,
     UUID roomId,
     String roomNumber,

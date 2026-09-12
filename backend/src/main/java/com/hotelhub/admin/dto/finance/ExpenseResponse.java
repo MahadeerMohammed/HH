@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record ExpenseResponse(
     UUID id,
+    UUID importId,
     UUID roomId,
     String roomNumber,
     LocalDate expenseDate,

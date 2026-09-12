@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,6 +27,9 @@ public class RevenueEntry extends BaseEntity {
     @GeneratedValue
     @UuidGenerator
     private UUID id;
+
+    @Column(name = "import_id", nullable = false, unique = true)
+    private UUID importId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "room_id", nullable = false)
@@ -78,4 +82,11 @@ public class RevenueEntry extends BaseEntity {
 
     @Column(nullable = false)
     private boolean checkingOut;
+
+    @PrePersist
+    void prePersist() {
+        if (importId == null) {
+            importId = UUID.randomUUID();
+        }
+    }
 }

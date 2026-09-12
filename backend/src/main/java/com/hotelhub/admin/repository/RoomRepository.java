@@ -12,9 +12,15 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
 
     List<Room> findAllByActiveTrueOrderByRoomNumberAsc();
 
+    List<Room> findByActiveTrueAndUpdatedAtBetweenOrderByRoomNumberAsc(java.time.Instant from, java.time.Instant to);
+
     Optional<Room> findByIdAndActiveTrue(UUID id);
 
+    Optional<Room> findByRoomNumberIgnoreCaseAndActiveTrue(String roomNumber);
+
     boolean existsByRoomNumberIgnoreCase(String roomNumber);
+
+    boolean existsByImportId(UUID importId);
 
     boolean existsByRoomNumberIgnoreCaseAndIdNot(String roomNumber, UUID id);
 
